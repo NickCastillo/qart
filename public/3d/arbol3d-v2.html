@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Autumn Tree 3D</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(1200px 800px at 50% 26%,#33203a,#140e1d);font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Inter,sans-serif;color:#f5eee6}
+  canvas{display:block}
+  #ui{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:22px 26px;box-sizing:border-box}
+  header h1{font-size:14px;letter-spacing:.22em;margin:0;font-weight:700}
+  header p{margin:5px 0 0;font-size:12px;color:#ab9484;letter-spacing:.04em}
+  #foot{display:flex;flex-direction:column;align-items:center;gap:12px}
+  #hint{font-size:12px;color:#ab9484;letter-spacing:.04em;transition:color .4s}
+  #btn{pointer-events:auto;border:0;border-radius:12px;padding:14px 30px;font-size:13px;font-weight:700;letter-spacing:.14em;color:#241208;background:linear-gradient(180deg,#f2b23a,#e08a2c);cursor:pointer;box-shadow:0 8px 22px rgba(224,138,44,.32),inset 0 1px 0 rgba(255,255,255,.45);transition:transform .08s,filter .2s}
+  #btn:hover{filter:brightness(1.06)}
+  #btn:active{transform:translateY(2px)}
+  #btn:disabled{filter:saturate(.4) brightness(.8);cursor:default}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="ui">
+  <header>
+    <h1>AUTUMN TREE · 3D</h1>
+    <p>drag to rotate &nbsp;·&nbsp; scroll to zoom in &nbsp;·&nbsp; look at it from above</p>
+  </header>
+  <div id="foot">
+    <div id="hint">all the leaves will fall beneath the tree — together they draw the QR code</div>
+    <button id="btn">GENERATE QR</button>
+  </div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+// real QR from https://pen.dev with H error correction:
+// tolerates the trunk occupying the center of the code
+const QR = [
+"QQQQQQQ.Q.Q...QQQQ..Q.QQQQQQQ",
+"Q.....Q.QQQ.Q..QQ.Q.Q.Q.....Q",
+"Q.QQQ.Q..Q.QQQ.Q.QQ...Q.QQQ.Q",
+"Q.QQQ.Q.QQ..Q.QQ...Q..Q.QQQ.Q",
+"Q.QQQ.Q.QQQ.QQQ..QQ...Q.QQQ.Q",
+"Q.....Q.Q..Q.....QQQ..Q.....Q",
+"QQQQQQQ.Q.Q.Q.Q.Q.Q.Q.QQQQQQQ",
+".........QQQQ.Q.Q...Q........",
+"...Q..Q.....Q..Q.Q.....QQQ.QQ",
+"Q...Q..Q..QQQ.QQQ..QQQ..Q...Q",
+".Q.QQ.QQ.QQ.QQ.QQ.Q.Q.Q...QQ.",
+"Q.QQ.Q...QQQQQQ......QQQQ.QQ.",
+".QQQQQQ.Q.......QQ.QQ.QQ.Q...",
+".....Q.QQ.QQ.QQ.Q..QQQ.Q.Q.Q.",
+".QQQ.QQ.Q.QQQ..Q.QQ...Q....QQ",
+".Q.QQ..QQQ..Q......Q...Q...Q.",
+"QQ...QQ.QQQ..Q..QQQQ...QQ..Q.",
+".QQ.....Q.QQ..Q.QQ.QQ.....QQQ",
+"Q.Q.Q.QQ..QQQQQQ.Q...Q.QQ..QQ",
+"..QQ.Q...Q..QQ.Q.QQ....Q.....",
+"Q..QQQQ.Q..QQQQ.Q...QQQQQ..Q.",
+"........Q.Q......Q..Q...Q..QQ",
+"QQQQQQQ..QQQ.Q.Q.QQ.Q.Q.QQQQ.",
+"Q.....Q..QQQ.Q....Q.Q...Q.QQQ",
+"Q.QQQ.Q..Q....QQQ.Q.QQQQQQ.Q.",
+"Q.QQQ.Q.Q..QQQQQQ..QQQQ.QQQQQ",
+"Q.QQQ.Q..Q.QQ...Q..QQ...Q.Q.Q",
+"Q.....Q..Q..Q..QQQQQ..QQ..QQ.",
+"QQQQQQQ..QQQ...QQQ....Q.QQQQ."];
+
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x1c1326, 34, 64);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.1, 130);
+camera.position.set(14, 10, 16);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 3.8, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.minDistance = 9;
+controls.maxDistance = 42;
+controls.maxPolarAngle = Math.PI * 0.55;
+
+window.setView = (polarDeg, aziDeg, dist = 24) => {
+  const p = THREE.MathUtils.degToRad(polarDeg), a = THREE.MathUtils.degToRad(aziDeg);
+  const t = controls.target;
+  camera.position.set(
+    t.x + dist*Math.sin(p)*Math.sin(a),
+    t.y + dist*Math.cos(p),
+    t.z + dist*Math.sin(p)*Math.cos(a)
+  );
+  camera.lookAt(t);
+};
+
+scene.add(new THREE.HemisphereLight(0xffe8cf, 0x3a2b3f, 0.95));
+const sun = new THREE.DirectionalLight(0xffd9a8, 0.9);
+sun.position.set(10, 15, 6);
+scene.add(sun);
+const fillLight = new THREE.DirectionalLight(0xb078ff, 0.22);
+fillLight.position.set(-9, 6, -10);
+scene.add(fillLight);
+
+let seed = 23;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const M = new THREE.Matrix4();
+const C = new THREE.Color();
+const Q = new THREE.Quaternion();
+const E = new THREE.Euler();
+const V1 = new THREE.Vector3();
+const SCL = new THREE.Vector3(1,1,1);
+const HIDE = new THREE.Matrix4().makeScale(0,0,0);
+
+// ---------- square ground ----------
+const S = 22;
+const ground = new THREE.Mesh(
+  new THREE.BoxGeometry(S, 0.22, S),
+  new THREE.MeshLambertMaterial({color:0x271c2b})
+);
+ground.position.y = -0.11;
+scene.add(ground);
+const rimMat = new THREE.MeshBasicMaterial({color:0x8a6a3a});
+[[0,-S/2],[0,S/2],[-S/2,0],[S/2,0]].forEach(([x,z], i) => {
+  const r = new THREE.Mesh(new THREE.BoxGeometry(i<2?S+0.1:0.1, 0.08, i<2?0.1:S+0.1), rimMat);
+  r.position.set(x, 0.02, z);
+  scene.add(r);
+});
+
+// ---------- trunk and branches: autumn red, they are the central modules of the QR ----------
+const CS = 0.3;
+const trunkCells = [];
+for (let y = 0.15; y <= 5.4; y += CS) {
+  const r = 0.82 - y*0.07;
+  for (let x = -1.2; x <= 1.2; x += CS)
+  for (let z = -1.2; z <= 1.2; z += CS)
+    if (x*x + z*z <= r*r) trunkCells.push([x, y, z]);
+}
+const branchEnds = [[0.9, 7.0, 0.5], [-0.8, 7.2, -0.4], [0.5, 7.4, -0.9], [-0.6, 6.8, 0.8]];
+branchEnds.forEach(([ex,ey,ez]) => {
+  for (let i = 0; i <= 14; i++) {
+    const t = i/14;
+    const x = Math.round((ex*t)/CS)*CS;
+    const y = Math.round((4.4 + (ey-4.4)*t)/CS)*CS;
+    const z = Math.round((ez*t)/CS)*CS;
+    trunkCells.push([x, y, z]);
+  }
+});
+const trunkGeo = new THREE.BoxGeometry(CS*0.98, CS*0.98, CS*0.98);
+const trunkMat = new THREE.MeshLambertMaterial({color:0xffffff});
+const trunk = new THREE.InstancedMesh(trunkGeo, trunkMat, trunkCells.length);
+trunkCells.forEach(([x,y,z], i) => {
+  M.makeTranslation(x, y, z);
+  trunk.setMatrixAt(i, M);
+  const v = 0.8 + (rnd()-0.5)*0.16;
+  C.setRGB(0.62*v, 0.24*v, 0.1*v);
+  trunk.setColorAt(i, C);
+});
+trunk.instanceColor.needsUpdate = true;
+scene.add(trunk);
+
+// ---------- autumn canopy ----------
+const blobs = [
+  [0.0, 7.3,  0.0, 2.9],
+  [-2.1, 6.8,  0.7, 2.1],
+  [2.2, 7.0,  0.5, 2.2],
+  [0.5, 6.5, -2.0, 2.0],
+  [-0.7, 8.6, -0.5, 2.2],
+  [1.3, 8.3,  1.2, 1.9],
+  [-1.8, 7.9, -1.4, 1.8],
+  [0.3, 6.6,  2.1, 1.9]
+];
+const canopyCells = [];
+for (let x = -5.5; x <= 5.5; x += CS)
+for (let y = 5.4;  y <= 11.4; y += CS)
+for (let z = -5.5; z <= 5.5; z += CS) {
+  const inside = blobs.some(([bx,by,bz,r]) => {
+    const dx = x-bx, dy = (y-by)*1.12, dz = z-bz;
+    return dx*dx + dy*dy + dz*dz < r*r;
+  });
+  if (inside) canopyCells.push([x, y, z]);
+}
+const autumn = [0xd9772b, 0xc94f2e, 0xe3a832, 0xa83c28, 0xe8c25a, 0xcf6425];
+const canopyGeo = new THREE.BoxGeometry(CS*0.98, CS*0.98, CS*0.98);
+const canopyMat = new THREE.MeshLambertMaterial({color:0xffffff, transparent:true, opacity:1});
+const canopy = new THREE.InstancedMesh(canopyGeo, canopyMat, canopyCells.length);
+const canopyMats = [];
+const canopyColors = [];
+let yMin = 1e9, yMax = -1e9;
+canopyCells.forEach(([,y]) => { yMin = Math.min(yMin,y); yMax = Math.max(yMax,y); });
+canopyCells.forEach(([x,y,z], i) => {
+  M.makeTranslation(x, y, z);
+  canopy.setMatrixAt(i, M);
+  canopyMats.push(M.clone());
+  const t = (y - yMin) / (yMax - yMin);
+  C.set(autumn[(rnd()*autumn.length)|0]);
+  C.multiplyScalar(0.8 + t*0.3 + (rnd()-0.5)*0.08);
+  canopy.setColorAt(i, C);
+  canopyColors.push(C.clone());
+});
+canopy.instanceColor.needsUpdate = true;
+scene.add(canopy);
+
+// decorative dry leaves, outside the QR area
+const LEAF_W = 0.34, LEAF_H = 0.1;
+const leafGeo = new THREE.BoxGeometry(LEAF_W, LEAF_H, LEAF_W);
+const decoMat = new THREE.MeshLambertMaterial({color:0xffffff});
+const NDECO = 60;
+const deco = new THREE.InstancedMesh(leafGeo, decoMat, NDECO);
+for (let i = 0; i < NDECO; i++) {
+  const a = rnd()*Math.PI*2, r = 7.4 + rnd()*3;
+  V1.set(Math.cos(a)*r, LEAF_H/2 + 0.11, Math.sin(a)*r);
+  E.set(0, rnd()*Math.PI, 0);
+  Q.setFromEuler(E);
+  M.compose(V1, Q, SCL);
+  deco.setMatrixAt(i, M);
+  C.set(autumn[(rnd()*autumn.length)|0]).multiplyScalar(0.62);
+  deco.setColorAt(i, C);
+}
+deco.instanceColor.needsUpdate = true;
+scene.add(deco);
+
+// fireflies at dusk
+const NFIRE = 12;
+const fireGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+const fireMat = new THREE.MeshBasicMaterial({color:0xffe28a});
+const fireflies = new THREE.InstancedMesh(fireGeo, fireMat, NFIRE);
+const FS = new THREE.Vector3();
+const flies = [];
+for (let i = 0; i < NFIRE; i++) {
+  flies.push({cx:(rnd()-0.5)*14, cy:1.2+rnd()*6.5, cz:(rnd()-0.5)*11, ph:rnd()*6.28, w:0.25+rnd()*0.5});
+}
+scene.add(fireflies);
+const fireLight = new THREE.PointLight(0xffd27a, 2.5, 7);
+scene.add(fireLight);
+
+// ---------- falling leaves (ambient) ----------
+const NLEAF = 110;
+const fallMat = new THREE.MeshLambertMaterial({color:0xffffff});
+const falling = new THREE.InstancedMesh(leafGeo, fallMat, NLEAF);
+const lowCells = canopyCells.filter(([,y]) => y < 7.6);
+const leaves = [];
+for (let i = 0; i < NLEAF; i++) {
+  const c = lowCells[(rnd()*lowCells.length)|0];
+  leaves.push({x:c[0], y:c[1]-0.3-rnd()*5, z:c[2], sp:1.1+rnd()*1.1, ph:rnd()*6.28, rx:rnd()*4-2, ry:rnd()*4-2, rz:rnd()*4-2, on:true});
+  C.set(autumn[(rnd()*autumn.length)|0]);
+  falling.setColorAt(i, C);
+}
+falling.instanceColor.needsUpdate = true;
+scene.add(falling);
+
+// ---------- target: QR beneath the tree ----------
+const MSZ = 0.336;
+const TRUNK_R = 1.35; // the modules under the trunk are represented by the trunk itself
+const targets = [];
+QR.forEach((row, r) => [...row].forEach((ch, c) => {
+  if (ch !== 'Q') return;
+  const x = (c-14)*MSZ, z = (r-14)*MSZ;
+  if (Math.hypot(x, z) < TRUNK_R) return;
+  targets.push({x, z});
+}));
+
+// each canopy leaf is a job: one per module, the rest stack on top
+const jobs = canopyCells.map(([sx,sy,sz], ci) => ({
+  ci, sx, sy, sz,
+  dur:1.0+rnd()*0.8, p:0, ph:rnd()*6.28,
+  rx:rnd()*6-3, ry:rnd()*6-3, rz:rnd()*6-3,
+  started:false, landed:false, tx:0, tz:0, ti:0
+}));
+for (let i = jobs.length-1; i > 0; i--) { const j = (rnd()*(i+1))|0; [jobs[i],jobs[j]] = [jobs[j],jobs[i]]; }
+jobs.forEach((j, k) => {
+  j.delay = k*0.0012;
+  j.ti = k < targets.length ? k : (rnd()*targets.length)|0;
+  j.tx = targets[j.ti].x;
+  j.tz = targets[j.ti].z;
+});
+const stackN = new Map();
+
+const jobMat = new THREE.MeshLambertMaterial({color:0xffffff, emissive:0x1c0a05});
+const jobMesh = new THREE.InstancedMesh(leafGeo, jobMat, jobs.length);
+jobs.forEach((j, i) => {
+  jobMesh.setMatrixAt(i, HIDE);
+  jobMesh.setColorAt(i, canopyColors[j.ci]);
+});
+jobMesh.instanceColor.needsUpdate = true;
+scene.add(jobMesh);
+
+const smooth = p => p*p*(3-2*p);
+
+// ---------- interaction ----------
+const btn = document.getElementById('btn');
+const hint = document.getElementById('hint');
+let mode = 'fall';
+let formT = 0, landedCount = 0;
+
+btn.addEventListener('click', () => {
+  if (mode === 'fall') {
+    mode = 'forming'; formT = 0; landedCount = 0;
+    btn.disabled = true; btn.textContent = 'GENERATING…';
+    hint.textContent = 'the tree releases all its leaves…';
+  } else if (mode === 'done') {
+    jobs.forEach(j => { j.p = 0; j.started = false; j.landed = false; });
+    stackN.clear();
+    for (let i = 0; i < jobs.length; i++) jobMesh.setMatrixAt(i, HIDE);
+    canopyMats.forEach((m, i) => canopy.setMatrixAt(i, m));
+    canopy.instanceMatrix.needsUpdate = true;
+    jobMesh.instanceMatrix.needsUpdate = true;
+    leaves.forEach(l => l.on = true);
+    mode = 'fall';
+    btn.textContent = 'GENERATE QR';
+    hint.textContent = 'all the leaves will fall beneath the tree — together they draw the QR code';
+  }
+});
+window.__state = () => ({mode, formT, landedCount, total:jobs.length, frames:window.__fr||0});
+
+// ---------- animación ----------
+const clock = new THREE.Clock();
+function animate(){
+  window.__fr = (window.__fr||0)+1;
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+
+  canopy.position.x = Math.sin(t*0.6)*0.1;
+  canopy.position.z = Math.cos(t*0.45)*0.07;
+  canopy.scale.setScalar(1 + Math.sin(t*0.8)*0.012);
+
+  // flickering fireflies
+  flies.forEach((f, i) => {
+    const a = t*f.w + f.ph;
+    const pulse = Math.max(0.12, 0.55 + 0.5*Math.sin(t*2.3 + f.ph*3));
+    V1.set(f.cx + Math.sin(a)*1.7, f.cy + Math.sin(a*1.7)*0.9, f.cz + Math.cos(a*1.3)*1.7);
+    if (i === 0) fireLight.position.copy(V1);
+    Q.setFromEuler(E.set(0, a, 0));
+    M.compose(V1, Q, FS.set(pulse, pulse, pulse));
+    fireflies.setMatrixAt(i, M);
+  });
+  fireflies.instanceMatrix.needsUpdate = true;
+  fireLight.intensity = 1.6 + Math.sin(t*2.3)*1.1;
+
+  // top view: the canopy fades to reveal the QR
+  const camDir = camera.position.clone().sub(controls.target);
+  const polar = Math.acos(Math.min(1, Math.max(-1, camDir.y / camDir.length())));
+  const fadeTarget = THREE.MathUtils.clamp((THREE.MathUtils.radToDeg(polar) - 20) / 26, 0, 1);
+  canopyMat.opacity += (fadeTarget - canopyMat.opacity) * Math.min(1, dt*6);
+  canopy.visible = canopyMat.opacity > 0.02;
+
+  // ambient leaves: fall fluttering
+  leaves.forEach((l, i) => {
+    if (!l.on) { falling.setMatrixAt(i, HIDE); return; }
+    l.y -= l.sp*dt;
+    l.x += Math.sin(t*1.8 + l.ph)*dt*0.8;
+    l.z += Math.cos(t*1.5 + l.ph)*dt*0.55;
+    if (l.y < 0.12) {
+      if (mode === 'fall') {
+        const c = lowCells[(rnd()*lowCells.length)|0];
+        l.x = c[0]; l.y = c[1]-0.3; l.z = c[2]; l.sp = 1.1+rnd()*1.1;
+      } else { l.on = false; falling.setMatrixAt(i, HIDE); return; }
+    }
+    V1.set(l.x, l.y, l.z);
+    E.set(t*l.rx + l.ph, t*l.ry, t*l.rz);
+    Q.setFromEuler(E);
+    M.compose(V1, Q, SCL);
+    falling.setMatrixAt(i, M);
+  });
+  falling.instanceMatrix.needsUpdate = true;
+
+  // QR formation: the tree is left bare
+  if (mode === 'forming') {
+    formT += dt;
+    let touched = false;
+    jobs.forEach((j, i) => {
+      if (j.landed || formT < j.delay) return;
+      if (!j.started) {
+        j.started = true;
+        canopy.setMatrixAt(j.ci, HIDE);
+        canopy.instanceMatrix.needsUpdate = true;
+      }
+      j.p += dt / j.dur;
+      touched = true;
+      if (j.p >= 1) {
+        j.landed = true; landedCount++;
+        const real = stackN.get(j.ti) || 0;
+        stackN.set(j.ti, real+1);
+        const n = Math.min(real, 3);
+        const jit = n === 0 ? 0.02 : 0.07;
+        const yaw = n === 0 ? (rnd()-0.5)*0.2 : (rnd()-0.5)*1.2;
+        V1.set(j.tx + (rnd()-0.5)*jit, LEAF_H/2 + 0.11 + n*(LEAF_H+0.005) + (n===3?rnd()*0.04:0), j.tz + (rnd()-0.5)*jit);
+        E.set(0, yaw, 0);
+        Q.setFromEuler(E);
+        M.compose(V1, Q, SCL);
+        jobMesh.setMatrixAt(i, M);
+      } else {
+        const s = smooth(j.p);
+        V1.set(
+          j.sx + (j.tx - j.sx)*s + Math.sin(j.p*7 + j.ph)*0.5*(1-j.p),
+          j.sy + (0.16 - j.sy)*j.p,
+          j.sz + (j.tz - j.sz)*s + Math.cos(j.p*6 + j.ph)*0.4*(1-j.p)
+        );
+        E.set(j.p*j.rx+j.ph, j.p*j.ry, j.p*j.rz*(1-j.p));
+        Q.setFromEuler(E);
+        M.compose(V1, Q, SCL);
+        jobMesh.setMatrixAt(i, M);
+      }
+    });
+    if (touched) jobMesh.instanceMatrix.needsUpdate = true;
+    if (landedCount === jobs.length) {
+      mode = 'done';
+      btn.disabled = false; btn.textContent = 'AUTUMN AGAIN';
+      hint.textContent = 'the leaves and trunk form the QR — look at it from above · pen.dev';
+    }
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

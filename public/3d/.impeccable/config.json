@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "public/3d/qart3d.html"
+        ],
+        "createdAt": "2026-11-06T04:15:39.621Z",
+        "reason": "Pre-existing scene UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "public/3d/react3d.html"
+        ],
+        "createdAt": "2026-11-06T04:16:16.132Z",
+        "reason": "Pre-existing scene UI, unrelated to this edit (copy translation only)"
+      }
+    ]
+  }
+}

@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Rain Cloud · Living Scene Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0D0D0B;--surface:#15150F;--text:#F2EFE6;--dim:#97938A;--accent:#E4C469;--line:#2A2922;--active:#201F16}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:Inter,ui-sans-serif,sans-serif;color:var(--text)}
+  #vp{position:fixed;inset:0 320px 0 0}
+  canvas{display:block}
+  #overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:22px 26px;box-sizing:border-box}
+  #topRow{display:flex;justify-content:space-between;align-items:center}
+  #sceneLabel{font-size:11px;letter-spacing:.22em;color:#63635C}
+  #scanChip{display:flex;gap:8px;align-items:center;padding:7px 14px;border:1px solid var(--line);border-radius:99px;background:var(--surface);font-size:12px;color:var(--dim)}
+  #scanDot{width:6px;height:6px;border-radius:99px;background:#7FA7C9}
+  #hint{font-size:12px;color:#63635C;text-align:center;letter-spacing:.04em;transition:color .4s}
+  #panel{position:fixed;top:0;right:0;bottom:0;width:320px;box-sizing:border-box;background:var(--surface);border-left:1px solid var(--line);padding:24px;display:flex;flex-direction:column;gap:22px;overflow-y:auto}
+  .sec{font-size:11px;font-weight:500;letter-spacing:.23em;color:var(--dim)}
+  .col{display:flex;flex-direction:column;gap:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .scene{display:flex;flex-direction:column;gap:8px;align-items:center;padding:14px 0;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--dim);font-size:12px;cursor:default}
+  .scene svg{width:22px;height:22px;stroke:var(--dim)}
+  .scene.active{border:1.5px solid var(--accent);background:var(--active);color:var(--text);font-weight:600}
+  .scene.active svg{stroke:var(--accent)}
+  .scene.soon{opacity:.45}
+  .scene.soon::after{content:"soon";font-size:9px;letter-spacing:.18em;color:var(--dim)}
+  .scene.link{cursor:pointer}
+  .scene.link:hover{border-color:var(--accent)}
+  .segmented{display:flex;gap:3px;padding:3px;border:1px solid var(--line);border-radius:11px;background:var(--bg)}
+  .seg{flex:1;padding:9px 0;border:0;border-radius:8px;background:transparent;color:var(--dim);font-family:Inter;font-size:12px;font-weight:500;cursor:pointer}
+  .seg.active{background:var(--accent);color:#15150F;font-weight:600}
+  .floorOpts{display:flex;gap:8px}
+  .fop{flex:1;display:flex;flex-direction:column;gap:7px;align-items:center;padding:11px 0;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--dim);font-family:Inter;font-size:11px;cursor:pointer}
+  .fop i{width:18px;height:18px;border-radius:99px;display:block}
+  .fop.active{border:1.5px solid var(--accent);background:var(--active);color:var(--text);font-weight:600}
+  .note{font-size:11px;line-height:1.5;color:var(--dim);opacity:.75}
+  .swatches{display:flex;gap:10px}
+  .psw{width:30px;height:30px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent}
+  .psw.active{border:1.5px solid var(--text)}
+  .psw i{width:20px;height:20px;border-radius:99px;display:block}
+  .chips{display:flex;gap:8px}
+  .chip{flex:1;padding:7px 0;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--dim);font-family:Inter;font-size:12px;font-weight:600;cursor:pointer}
+  .chip.on{border-color:var(--accent);background:var(--active);color:var(--accent)}
+  .srow{display:flex;justify-content:space-between;font-size:12px}
+  .srow b{font-weight:400;color:var(--text)}
+  .srow span{color:var(--dim)}
+  input[type=range]{-webkit-appearance:none;width:100%;height:14px;background:transparent}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(90deg,var(--accent) var(--fill,30%),var(--line) var(--fill,30%))}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;margin-top:-5.5px;width:14px;height:14px;border-radius:99px;background:var(--text);border:0}
+  #shuffle{margin-top:auto;padding:11px 0;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);font-family:Inter;font-size:13px;font-weight:500;cursor:pointer}
+  #shuffle:hover{border-color:var(--accent)}
+  #credit{display:flex;gap:8px;align-items:center;font-size:11px;color:var(--dim)}
+  #credit svg{width:13px;height:13px;stroke:#7FA35A;flex:none}
+  html.embed #panel,html.embed #overlay{display:none}
+  html.embed #vp{inset:0}
+</style>
+<script>if(new URLSearchParams(location.search).has('embed'))document.documentElement.classList.add('embed')</script>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="vp">
+  <div id="overlay">
+    <div id="topRow">
+      <div id="sceneLabel">RAIN CLOUD</div>
+      <div id="scanChip"><span id="scanDot"></span><span>100% scannable from above</span></div>
+    </div>
+    <div id="hint">the damp patches are already part of the code — Show QR: the cloud waters the rest</div>
+  </div>
+</div>
+<div id="panel">
+  <div class="col">
+    <div class="sec">SCENE</div>
+    <div class="grid2">
+      <div class="scene active"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>Cloud</div>
+      <div class="scene link" onclick="location.href='./arbol3d-v3.html'"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M8 19a4 4 0 0 1-2.24-7.32A3.5 3.5 0 0 1 9 6.03V6a3 3 0 1 1 6 0v.04a3.5 3.5 0 0 1 3.24 5.65A4 4 0 0 1 16 19Z"/><path d="M12 19v3"/></svg>Tree</div>
+      <div class="scene link" onclick="location.href='./panal3d-v3.html'"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Hive</div>
+      <div class="scene link" onclick="location.href='./cigarro3d-v3.html'"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 12H2v4h16"/><path d="M22 12v4"/><path d="M7 12v4"/></svg>Cigar</div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="sec">VIEW</div>
+    <div class="segmented">
+      <button class="seg active" data-mode="scene">Show scene</button>
+      <button class="seg" data-mode="qr">Show QR</button>
+      <button class="seg" data-mode="cloud">Show cloud</button>
+    </div>
+    <div class="note">Show QR makes it rain — each drop wets a dark square, then the camera flies overhead</div>
+  </div>
+  <div class="col">
+    <div class="sec">FLOOR</div>
+    <div class="floorOpts">
+      <button class="fop active" data-floor="cement"><i style="background:#CFCFCA"></i>Cement</button>
+      <button class="fop" data-floor="brick"><i style="background:#D2A188"></i>Bricks</button>
+      <button class="fop" data-floor="grass"><i style="background:#BCCF9C"></i>Grass</button>
+    </div>
+    <div class="note">dry floor stays light, rained-on squares turn dark — together they draw the code, with rocks and grass pitching in</div>
+  </div>
+  <div class="col">
+    <div class="sec">CLOUD</div>
+    <div class="swatches" id="swatches"></div>
+  </div>
+  <div class="col">
+    <div class="sec">ROTATION</div>
+    <div class="chips">
+      <button class="chip" data-ax="x">X</button>
+      <button class="chip on" data-ax="y">Y</button>
+      <button class="chip" data-ax="z">Z</button>
+    </div>
+    <div class="srow"><b>Speed</b><span id="spdV">0.6×</span></div>
+    <input type="range" id="spd" min="0" max="2" step="0.1" value="0.6" style="--fill:30%">
+  </div>
+  <button id="shuffle">Shuffle cloud</button>
+  <div id="credit">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>
+    <span>Concept — Abdou Yaackoubi · the Sakura QR tree</span>
+  </div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const QR = [
+"QQQQQQQ...Q.Q..QQ.QQQQQQQ",
+"Q.....Q.Q...QQQ.Q.Q.....Q",
+"Q.QQQ.Q.QQQ..Q.Q..Q.QQQ.Q",
+"Q.QQQ.Q.Q.Q.....Q.Q.QQQ.Q",
+"Q.QQQ.Q...Q.Q..QQ.Q.QQQ.Q",
+"Q.....Q..QQ.Q..Q..Q.....Q",
+"QQQQQQQ.Q.Q.Q.Q.Q.QQQQQQQ",
+"........Q.....QQQ........",
+"Q.....Q.Q..Q.....QQ..QQQ.",
+".....Q.Q..QQQQ..Q..QQQQQ.",
+".Q..QQQ..QQQQQQQ.QQ..Q.QQ",
+"..QQ.Q.QQQ.Q.Q.QQQQ..Q..Q",
+"Q.Q.QQQ.QQ.QQQ.Q..Q.....Q",
+"QQQQQ..QQ.Q....QQ..Q...Q.",
+"Q.....Q.Q..QQ..QQQ.QQQ.QQ",
+"Q.QQ....QQ.Q.......Q.QQ.Q",
+"Q.Q.QQQ.Q..Q...QQQQQQ.Q..",
+"........Q...QQQ.Q...Q....",
+"QQQQQQQ...QQ....Q.Q.Q...Q",
+"Q.....Q..Q..QQ.QQ...Q..Q.",
+"Q.QQQ.Q..QQ.Q.QQQQQQQ.QQ.",
+"Q.QQQ.Q..Q....Q.Q.Q.....Q",
+"Q.QQQ.Q..Q.QQ........QQ.Q",
+"Q.....Q...QQ..Q.QQ.QQ...Q",
+"QQQQQQQ.QQQ..QQ.QQ...Q..Q"];
+
+const N = 25, MSZ = 0.5;
+const cx = (c) => (c - 12) * MSZ, cz = (r) => (r - 12) * MSZ;
+const inFinder = (c, r) => (c < 8 && r < 8) || (c > 16 && r < 8) || (c < 8 && r > 16);
+
+let seed = 59;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const smooth = p => p*p*(3-2*p);
+
+const vp = document.getElementById('vp');
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xC6C8C6);
+
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160);
+let vpW = 0, vpH = 0;
+function sizeViewport(){
+  const w = vp.clientWidth || 880, h = vp.clientHeight || 760;
+  if (w === vpW && h === vpH) return;
+  vpW = w; vpH = h;
+  renderer.setSize(w, h);
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+}
+vp.prepend(renderer.domElement);
+sizeViewport();
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 3, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.minDistance = 7;
+controls.maxDistance = 56;
+if (document.documentElement.classList.contains('embed')) {
+  controls.enabled = false;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 1.2;
+}
+
+const place = (polarDeg, aziDeg, dist) => {
+  const p = THREE.MathUtils.degToRad(polarDeg), a = THREE.MathUtils.degToRad(aziDeg);
+  const t = controls.target;
+  return new THREE.Vector3(
+    t.x + dist*Math.sin(p)*Math.sin(a),
+    t.y + dist*Math.cos(p),
+    t.z + dist*Math.sin(p)*Math.cos(a));
+};
+camera.position.copy(place(64, 32, 28));
+camera.lookAt(controls.target);
+let tween = null;
+const flyTo = (p, a, d) => { tween = {s:camera.position.clone(), e:place(p, a, d), t:0}; };
+window.setView = (p, a, d = 26) => { camera.position.copy(place(p, a, d)); camera.lookAt(controls.target); };
+
+scene.add(new THREE.HemisphereLight(0xf2f4f8, 0x7e7e76, 1.25));
+const sun = new THREE.DirectionalLight(0xf4f2e8, 0.95);
+sun.position.set(-5.1, 16, -3.2);
+scene.add(sun);
+
+const world = new THREE.Group();
+scene.add(world);
+
+const M = new THREE.Matrix4(), C = new THREE.Color(), C2 = new THREE.Color();
+const V = new THREE.Vector3(), SC = new THREE.Vector3(1,1,1);
+const Qt = new THREE.Quaternion(), E = new THREE.Euler();
+
+const voxels = [];
+function reg(mesh, i, x, y, z, baseE){
+  const a = rnd()*Math.PI*2, rr = 7 + rnd()*7;
+  const v = {mesh, i, hx:x, hy:y, hz:z, ex:baseE ? baseE.x : 0, ey:baseE ? baseE.y : 0, ez:baseE ? baseE.z : 0,
+    sx:Math.cos(a)*rr, sy:2.5+rnd()*8, sz:Math.sin(a)*rr,
+    rot:(rnd()-0.5)*5, ph:rnd()*6.28, sp:0.5+rnd()*0.7, delay:rnd()*0.9, k:1};
+  voxels.push(v);
+  return v;
+}
+
+// ---- classification: permanent damp / grass / rocks vs fresh rain ----
+const stainCells = [], grassCells = [], rockCells = [], rainTargets = [];
+for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+  if (QR[r][c] !== 'Q') continue;
+  const keep = inFinder(c, r) ? rnd() < 0.62 : rnd() < 0.22;
+  if (!keep) { rainTargets.push([c, r]); continue; }
+  const t = rnd();
+  if (t < 0.55) stainCells.push([c, r]);
+  else if (t < 0.8) grassCells.push([c, r]);
+  else rockCells.push([c, r]);
+}
+
+// ---- floor: thick slab, just wider than the QR ----
+const SOIL = 16;
+const FLOORS = {
+  cement: {dry:0xCFCFCA, wet:0x467CB9},
+  brick:  {dry:0xD2A188, wet:0xC1715C},
+  grass:  {dry:0xBCCF9C, wet:0x68A33E}
+};
+let floorKey = 'cement';
+const soilMat = new THREE.MeshLambertMaterial({color:FLOORS.cement.dry, transparent:true, opacity:1});
+const soil = new THREE.Mesh(new THREE.BoxGeometry(SOIL, 0.85, SOIL), soilMat);
+soil.position.y = -0.425;
+world.add(soil);
+const lipMat = new THREE.MeshLambertMaterial({color:0xADADA6, transparent:true, opacity:1});
+const lip = new THREE.Mesh(new THREE.BoxGeometry(SOIL+0.7, 0.32, SOIL+0.7), lipMat);
+lip.position.y = -1.0;
+world.add(lip);
+
+// ---- permanent damp patches: varied sizes ----
+const stainGeo = new THREE.BoxGeometry(MSZ*0.94, 1, MSZ*0.94);
+stainGeo.translate(0, 0.5, 0);
+const stainMat = new THREE.MeshLambertMaterial({color:0xffffff});
+const stains = new THREE.InstancedMesh(stainGeo, stainMat, stainCells.length);
+const stainVar = [];
+stainCells.forEach(([c, r], i) => {
+  const v = reg(stains, i, cx(c) + (rnd()-0.5)*0.04, 0.005, cz(r) + (rnd()-0.5)*0.04, E.set(0, (rnd()-0.5)*0.3, 0).clone());
+  v.scaleY = 0.025 + rnd()*0.05;
+  v.scaleXZ = 0.84 + rnd()*0.2;
+  stainVar.push(0.85 + rnd()*0.3);
+});
+function paintStains(){
+  for (let i = 0; i < stainCells.length; i++) {
+    C.set(FLOORS[floorKey].wet).multiplyScalar(stainVar[i]);
+    stains.setColorAt(i, C);
+  }
+  stains.instanceColor.needsUpdate = true;
+}
+paintStains();
+world.add(stains);
+
+// ---- dark grass ----
+const grassBaseGeo = new THREE.BoxGeometry(MSZ*0.88, 0.14, MSZ*0.88);
+const grassBase = new THREE.InstancedMesh(grassBaseGeo, new THREE.MeshLambertMaterial({color:0xffffff}), grassCells.length);
+const bladeDefs = [];
+grassCells.forEach(([c, r], i) => {
+  reg(grassBase, i, cx(c), 0.07, cz(r));
+  C.set(rnd() < 0.5 ? 0x7EC15C : 0x5FA33E).multiplyScalar(0.85 + rnd()*0.3);
+  grassBase.setColorAt(i, C);
+  const nb = 2 + ((rnd()*2)|0);
+  for (let k = 0; k < nb; k++) bladeDefs.push([cx(c)+(rnd()-0.5)*0.24, 0.14, cz(r)+(rnd()-0.5)*0.24, 0.26+rnd()*0.24, (rnd()-0.5)*0.4]);
+});
+grassBase.instanceColor.needsUpdate = true;
+world.add(grassBase);
+const bladeGeo = new THREE.BoxGeometry(0.055, 1, 0.055);
+bladeGeo.translate(0, 0.5, 0);
+const blades = new THREE.InstancedMesh(bladeGeo, new THREE.MeshLambertMaterial({color:0xffffff}), bladeDefs.length);
+bladeDefs.forEach(([x, y, z, h, tilt], i) => {
+  reg(blades, i, x, y, z, E.set(tilt, rnd()*Math.PI, tilt*0.6).clone()).scaleY = h;
+  C.set(rnd() < 0.5 ? 0x76C15C : 0x53A33E).multiplyScalar(0.85 + rnd()*0.3);
+  blades.setColorAt(i, C);
+});
+blades.instanceColor.needsUpdate = true;
+world.add(blades);
+
+// ---- rocks of different sizes ----
+const rockGeo = new THREE.BoxGeometry(MSZ*0.84, 1, MSZ*0.8);
+const rocks = new THREE.InstancedMesh(rockGeo, new THREE.MeshLambertMaterial({color:0xffffff}), rockCells.length);
+rockCells.forEach(([c, r], i) => {
+  const v = reg(rocks, i, cx(c)+(rnd()-0.5)*0.05, 0.005, cz(r)+(rnd()-0.5)*0.05, E.set(0, (rnd()-0.5)*0.2, (rnd()-0.5)*0.1).clone());
+  v.scaleY = 0.1 + rnd()*rnd()*0.42;
+  v.scaleXZ = 0.86 + rnd()*0.18;
+  C.set(0x467CB9).multiplyScalar(0.8 + rnd()*0.4);
+  rocks.setColorAt(i, C);
+});
+rocks.instanceColor.needsUpdate = true;
+world.add(rocks);
+const rockGeoFix = rockGeo.translate(0, 0.5, 0);
+
+// ---- voxel cloud ----
+const CLOUDS = {
+  storm:  [0xDADDE0, 0xC4C9CE, 0xAEB4BB, 0x9BA2AB, 0x8C939C],
+  white:  [0xFFFFFF, 0xF2F4F6, 0xE4E8EC, 0xD8DDE2, 0xECEFF2],
+  sunset: [0xF2C4A0, 0xE8A87C, 0xDE8E66, 0xF4D4B8, 0xD2795A],
+  night:  [0x5A6478, 0x49536A, 0x6A7488, 0x3E4858, 0x7A8498],
+  gold:   [0xEFD58C, 0xE4C469, 0xD7B557, 0xF4E2AC, 0xC9A64B],
+  lilac:  [0xC8BEDC, 0xB4A8CE, 0xD8D0E8, 0xA094BE, 0xE4DEF0]
+};
+let cloudTones = CLOUDS.storm;
+const lumps = [
+  [0, 8.5, 0, 3.4], [-3.7, 8.1, 1.2, 2.7], [3.6, 8.3, -0.9, 2.8],
+  [1.5, 9.5, 2.1, 2.4], [-2.1, 9.5, -2.2, 2.3], [2.8, 7.9, 3.1, 2.3],
+  [-3.3, 8.7, -3.2, 2.3], [-1.1, 8.0, 3.6, 2.3], [3.6, 8.8, 3.2, 2.1],
+  [-4.5, 8.4, 2.6, 2.1], [4.4, 8.2, 1.8, 2.1], [-2.6, 7.9, -4.2, 2.1], [1.8, 8.6, -3.9, 2.2]
+];
+const N_CLOUD = 880;
+const cloudGeo = new THREE.BoxGeometry(0.44, 0.44, 0.44);
+const cloudMat = new THREE.MeshLambertMaterial({color:0xffffff, transparent:true, opacity:1});
+const cloud = new THREE.InstancedMesh(cloudGeo, cloudMat, N_CLOUD);
+const cloudPts = [];
+for (let i = 0; i < N_CLOUD; i++) {
+  let x, y, z;
+  do { x = rnd()*2-1; y = rnd()*2-1; z = rnd()*2-1; } while (x*x + y*y + z*z > 1);
+  const b = lumps[(rnd()*lumps.length)|0];
+  const len = Math.sqrt(x*x + y*y + z*z) || 1;
+  const sh = 0.5 + 0.5*Math.pow(rnd(), 0.45);
+  const px = b[0] + x/len*sh*b[3], py = b[1] + y/len*sh*b[3]*0.72, pz = b[2] + z/len*sh*b[3];
+  const v = reg(cloud, i, px, py, pz, E.set((rnd()-0.5)*0.3, rnd()*Math.PI, (rnd()-0.5)*0.3).clone());
+  v.isCloud = true;
+  cloudPts.push([px, py, pz]);
+}
+function paintCloud(){
+  let s2 = 33;
+  const r2 = () => (s2 = (s2*16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < N_CLOUD; i++) {
+    C.set(cloudTones[(r2()*cloudTones.length)|0]).multiplyScalar(0.9 + r2()*0.18);
+    cloud.setColorAt(i, C);
+  }
+  cloud.instanceColor.needsUpdate = true;
+}
+paintCloud();
+world.add(cloud);
+
+// ---- pixelated cloud shadow ----
+const shCells = new Set();
+cloudPts.forEach(([x, y, z]) => {
+  const gx = Math.round((x + 0.5) / MSZ), gz = Math.round((z + 0.35) / MSZ);
+  if (Math.abs(gx*MSZ) < SOIL/2 - 0.4 && Math.abs(gz*MSZ) < SOIL/2 - 0.4) shCells.add(gx + ':' + gz);
+});
+const shadowMat = new THREE.MeshBasicMaterial({color:0x33332E, transparent:true, opacity:0.13, depthWrite:false});
+const shKeys = [...shCells];
+const cloudShadow = new THREE.InstancedMesh(new THREE.BoxGeometry(MSZ*0.96, 0.02, MSZ*0.96), shadowMat, shKeys.length);
+shKeys.forEach((key, i) => {
+  const [gx, gz] = key.split(':').map(Number);
+  M.makeTranslation(gx*MSZ, 0.1, gz*MSZ);
+  cloudShadow.setMatrixAt(i, M);
+});
+cloudShadow.renderOrder = 5;
+world.add(cloudShadow);
+
+// ---- drops: rain onto the modules and leave them wet ----
+const N_DROP = Math.round(rainTargets.length * 1.25);
+const dropOrder = [...Array(N_DROP).keys()];
+for (let i = dropOrder.length-1; i > 0; i--) { const j = (rnd()*(i+1))|0; [dropOrder[i],dropOrder[j]] = [dropOrder[j],dropOrder[i]]; }
+const dropStack = new Array(rainTargets.length).fill(0);
+const dropGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+const dropMesh = new THREE.InstancedMesh(dropGeo, new THREE.MeshLambertMaterial({color:0xffffff}), N_DROP);
+const drops = [];
+const dropVar = [];
+for (let i = 0; i < N_DROP; i++) {
+  const ti = i < rainTargets.length ? i : (rnd()*rainTargets.length)|0;
+  const [tc, tr] = rainTargets[ti];
+  const n = Math.min(dropStack[ti]++, 2);
+  const txv = cx(tc) + (rnd()-0.5)*0.03, tzv = cz(tr) + (rnd()-0.5)*0.03;
+  let best = cloudPts[0], bd = 1e9;
+  for (let t = 0; t < 60; t++) {
+    const p = cloudPts[(rnd()*cloudPts.length)|0];
+    const d = (p[0]-txv)*(p[0]-txv) + (p[2]-tzv)*(p[2]-tzv) + (p[1]-7.4)*(p[1]-7.4)*0.3;
+    if (d < bd) { bd = d; best = p; }
+  }
+  drops.push({
+    sx:best[0] + (rnd()-0.5)*0.15,
+    sy:best[1] - 0.15,
+    sz:best[2] + (rnd()-0.5)*0.15,
+    tx:txv, ty:0.03 + n*0.012, tz:tzv,
+    q:0, fade:1, qDelay:dropOrder[i]*0.004 + rnd()*0.3, dur:0.55 + rnd()*0.5,
+    ph:rnd()*6.28, yaw:(rnd()-0.5)*0.4
+  });
+  const v = reg(dropMesh, i, drops[i].sx, drops[i].sy, drops[i].sz);
+  v.isDrop = drops[i];
+  dropVar.push(0.88 + rnd()*0.24);
+}
+const dropBlue = new THREE.Color(0x9FC2DC);
+const dropDarks = [];
+function paintDropTargets(){
+  dropDarks.length = 0;
+  for (let i = 0; i < N_DROP; i++) dropDarks.push(new THREE.Color(FLOORS[floorKey].wet).multiplyScalar(dropVar[i]));
+  drops.forEach(l => l.cPainted = -1);
+}
+paintDropTargets();
+for (let i = 0; i < N_DROP; i++) dropMesh.setColorAt(i, dropBlue);
+dropMesh.instanceColor.needsUpdate = true;
+world.add(dropMesh);
+
+// ---- ambient rain ----
+const NRAIN = 70;
+const rainMat = new THREE.MeshLambertMaterial({color:0xffffff, transparent:true, opacity:1});
+const rain = new THREE.InstancedMesh(new THREE.BoxGeometry(0.07, 0.5, 0.07), rainMat, NRAIN);
+const rains = [];
+const rainSpawn = (l) => {
+  const p = cloudPts[(rnd()*cloudPts.length)|0];
+  l.x = p[0]; l.y = p[1] - 0.4; l.z = p[2]; l.sp = 7 + rnd()*4;
+};
+for (let i = 0; i < NRAIN; i++) {
+  const l = {};
+  rainSpawn(l);
+  l.y = rnd()*l.y;
+  rains.push(l);
+  C.set(0x9FC2DC).multiplyScalar(0.85 + rnd()*0.3);
+  rain.setColorAt(i, C);
+}
+rain.instanceColor.needsUpdate = true;
+world.add(rain);
+
+const total = voxels.length;
+document.getElementById('sceneLabel').textContent =
+  total + ' VOXELS · ' + (stainCells.length + grassCells.length + rockCells.length) + ' WET / GRASS / ROCK MODULES · ' + rainTargets.length + ' WAIT FOR RAIN';
+
+let mode = 'scene';
+let stateT = 10;
+let topFlown = true;
+const hint = document.getElementById('hint');
+const HINTS = {
+  scene: 'the damp patches, the grass and the rocks are already part of the code — Show QR: the cloud waters the rest',
+  qrDrop: 'it rains — each drop wets a dark module of the code…',
+  qrTop: 'TOP VIEW — dry floor and wet floor draw the QR · scan it',
+  cloud: 'the scene dissolves — every block drifts free · pick a view to rebuild it'
+};
+function setMode(m){
+  mode = m;
+  stateT = 0;
+  voxels.forEach(v => v.delay = rnd()*0.9);
+  document.querySelectorAll('.seg').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  if (m === 'scene') { flyTo(64, 32, 28); topFlown = true; hint.textContent = HINTS.scene; }
+  if (m === 'cloud') { flyTo(64, 20, 30); topFlown = true; hint.textContent = HINTS.cloud; }
+  if (m === 'qr') {
+    const TAU = Math.PI*2;
+    const norm = a => { a %= TAU; if (a > Math.PI) a -= TAU; if (a < -Math.PI) a += TAU; return a; };
+    world.rotation.set(norm(world.rotation.x), norm(world.rotation.y), norm(world.rotation.z));
+    topFlown = false;
+    drops.forEach(l => { l.q = 0; l.fade = 1; });
+    hint.textContent = HINTS.qrDrop;
+  }
+}
+document.querySelectorAll('.seg').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+const axes = {x:false, y:true, z:false};
+document.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => {
+  axes[ch.dataset.ax] = !axes[ch.dataset.ax];
+  ch.classList.toggle('on', axes[ch.dataset.ax]);
+}));
+let speed = 0.6;
+const spd = document.getElementById('spd');
+spd.addEventListener('input', () => {
+  speed = parseFloat(spd.value);
+  document.getElementById('spdV').textContent = speed.toFixed(1) + '×';
+  spd.style.setProperty('--fill', (speed/2*100) + '%');
+});
+
+document.querySelectorAll('.fop').forEach(b => b.addEventListener('click', () => {
+  floorKey = b.dataset.floor;
+  soilMat.color.set(FLOORS[floorKey].dry);
+  lipMat.color.set(FLOORS[floorKey].dry).multiplyScalar(0.82);
+  paintStains();
+  paintDropTargets();
+  document.querySelectorAll('.fop').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+}));
+
+const swBox = document.getElementById('swatches');
+Object.entries(CLOUDS).forEach(([name, cols], idx) => {
+  const b = document.createElement('button');
+  b.className = 'psw' + (idx === 0 ? ' active' : '');
+  b.innerHTML = '<i style="background:#' + cols[1].toString(16).padStart(6, '0') + '"></i>';
+  b.title = name;
+  b.addEventListener('click', () => {
+    cloudTones = cols;
+    paintCloud();
+    document.querySelectorAll('.psw').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+  });
+  swBox.appendChild(b);
+});
+document.getElementById('shuffle').addEventListener('click', () => {
+  seed = ((Math.random()*2147483646)|0) + 1;
+  for (let i = 0; i < N_CLOUD; i++) {
+    C.set(cloudTones[(rnd()*cloudTones.length)|0]).multiplyScalar(0.88 + rnd()*0.2);
+    cloud.setColorAt(i, C);
+  }
+  cloud.instanceColor.needsUpdate = true;
+});
+
+window.__state = () => ({mode, total, drops:N_DROP, targets:rainTargets.length, frames:window.__fr||0,
+  qAvg:+(drops.reduce((a, l) => a+l.q, 0)/N_DROP).toFixed(3), topFlown});
+
+const clock = new THREE.Clock();
+let simT = 0;
+function step(dt){
+  simT += dt; stateT += dt;
+  const kTarget = mode === 'cloud' ? 0 : 1;
+
+  let qSum = 0;
+  for (let i = 0; i < total; i++) {
+    const v = voxels[i];
+    if (stateT > v.delay) v.k += (kTarget - v.k) * Math.min(1, dt*2.6);
+    const k = smooth(Math.max(0, Math.min(1, v.k)));
+    let hx = v.hx, hy = v.hy, hz = v.hz;
+
+    if (v.isCloud) {
+      hy += Math.sin(simT*0.7 + v.ph)*0.14;
+      hx += Math.sin(simT*0.4 + v.ph)*0.08;
+    }
+
+    if (v.isDrop) {
+      const l = v.isDrop;
+      if (mode === 'qr') {
+        if (stateT > l.qDelay) l.q += (1 - l.q) * Math.min(1, dt/l.dur*2.2);
+      } else if (l.q > 0.001) {
+        l.fade = Math.max(0, l.fade - dt*1.4);
+        if (l.fade === 0) l.q = 0;
+      }
+      const q = smooth(Math.max(0, Math.min(1, l.q)));
+      qSum += l.q;
+      const e = q*q;
+      hx = l.sx + (l.tx - l.sx)*q;
+      hy = l.sy + (l.ty - l.sy)*e;
+      hz = l.sz + (l.tz - l.sz)*q;
+      const settle = smooth(Math.max(0, (l.q - 0.78)/0.22));
+      let scl = Math.min(1, l.q*9) * (mode === 'qr' ? 1 : l.fade);
+      if (l.q < 0.001) scl = 0;
+      SC.set(scl*(0.5 + settle*1.95), scl*(1.5 - settle*1.36), scl*(0.5 + settle*1.95));
+      if (l.cPainted === undefined || Math.abs(settle - (l.cPainted||0)) > 0.04) {
+        C2.copy(dropBlue).lerp(dropDarks[v.i], settle);
+        dropMesh.setColorAt(v.i, C2);
+        l.cPainted = settle;
+        dropColorsDirty = true;
+      }
+      const bobA = (1-k);
+      V.set(
+        v.sx + (hx - v.sx)*k + Math.sin(simT*v.sp + v.ph)*0.18*bobA,
+        v.sy + (hy - v.sy)*k + Math.cos(simT*v.sp*0.8 + v.ph)*0.22*bobA,
+        v.sz + (hz - v.sz)*k
+      );
+      E.set(0, l.yaw*settle, 0);
+      Qt.setFromEuler(E);
+      M.compose(V, Qt, SC);
+      v.mesh.setMatrixAt(v.i, M);
+      continue;
+    }
+
+    const bobAmt = (1-k);
+    V.set(
+      v.sx + (hx - v.sx)*k + Math.sin(simT*v.sp + v.ph)*0.18*bobAmt,
+      v.sy + (hy - v.sy)*k + Math.cos(simT*v.sp*0.8 + v.ph)*0.22*bobAmt,
+      v.sz + (hz - v.sz)*k
+    );
+    const spin = v.rot*(1-k);
+    E.set(v.ex + spin*0.6, v.ey + spin, v.ez + spin*0.3);
+    Qt.setFromEuler(E);
+    if (v.scaleY !== undefined) SC.set(v.scaleXZ || 1, v.scaleY + (1-k)*0.2, v.scaleXZ || 1);
+    else SC.set(1, 1, 1);
+    M.compose(V, Qt, SC);
+    v.mesh.setMatrixAt(v.i, M);
+  }
+  stains.instanceMatrix.needsUpdate = true;
+  grassBase.instanceMatrix.needsUpdate = true;
+  blades.instanceMatrix.needsUpdate = true;
+  rocks.instanceMatrix.needsUpdate = true;
+  cloud.instanceMatrix.needsUpdate = true;
+  dropMesh.instanceMatrix.needsUpdate = true;
+  if (dropColorsDirty) { dropMesh.instanceColor.needsUpdate = true; dropColorsDirty = false; }
+
+  // the cloud fades out in the overhead view
+  const cloudFade = (mode === 'qr' && topFlown) ? 0 : 1;
+  cloudMat.opacity += (cloudFade - cloudMat.opacity)*Math.min(1, dt*3);
+  cloud.visible = cloudMat.opacity > 0.02;
+
+  // cloud shadow: fades with the rain and with the cloud
+  const shTarget = mode === 'cloud' ? 0 : (1 - qSum/N_DROP) * 0.13 * cloudMat.opacity;
+  shadowMat.opacity += (shTarget - shadowMat.opacity)*Math.min(1, dt*3);
+  cloudShadow.visible = shadowMat.opacity > 0.012;
+
+  // ambient rain in scene mode
+  const rainTarget = mode === 'scene' ? 1 : 0;
+  rainMat.opacity += (rainTarget - rainMat.opacity)*Math.min(1, dt*3);
+  rain.visible = rainMat.opacity > 0.02;
+  if (rain.visible) {
+    rains.forEach((l, i) => {
+      l.y -= l.sp*dt;
+      if (l.y < 0.3) rainSpawn(l);
+      V.set(l.x, l.y, l.z);
+      Qt.identity();
+      M.compose(V, Qt, SC.set(1, 1, 1));
+      rain.setMatrixAt(i, M);
+    });
+    rain.instanceMatrix.needsUpdate = true;
+  }
+
+  if (mode === 'qr' && !topFlown && qSum/N_DROP > 0.82) {
+    topFlown = true;
+    flyTo(0.5, 0, 26);
+    hint.textContent = HINTS.qrTop;
+  }
+
+  const soilTarget = mode !== 'cloud' ? 1 : 0;
+  soilMat.opacity += (soilTarget - soilMat.opacity)*Math.min(1, dt*3);
+  lipMat.opacity = soilMat.opacity;
+  soil.visible = lip.visible = soilMat.opacity > 0.02;
+
+  if (mode === 'qr') {
+    world.rotation.x += (0 - world.rotation.x)*Math.min(1, dt*3);
+    world.rotation.y += (0 - world.rotation.y)*Math.min(1, dt*3);
+    world.rotation.z += (0 - world.rotation.z)*Math.min(1, dt*3);
+  } else {
+    if (axes.x) world.rotation.x += dt*speed*0.18;
+    if (axes.y) world.rotation.y += dt*speed*0.3;
+    if (axes.z) world.rotation.z += dt*speed*0.18;
+  }
+
+  if (tween) {
+    tween.t += dt/1.2;
+    const k = smooth(Math.min(1, tween.t));
+    camera.position.lerpVectors(tween.s, tween.e, k);
+    if (tween.t >= 1) tween = null;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+let dropColorsDirty = true;
+function animate(){
+  window.__fr = (window.__fr||0)+1;
+  requestAnimationFrame(animate);
+  if ((window.__fr & 31) === 0) sizeViewport();
+  step(Math.min(clock.getDelta(), 0.05));
+}
+animate();
+window.__step = step;
+
+addEventListener('resize', sizeViewport);
+</script>
+</body>
+</html>

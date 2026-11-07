@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Constellation · QaRt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#EEF0F3;--ink:#0A0A0A;--acc:#FF3D00;--dim:#5C6066;--nav:64px;--strip:124px;--edge:40px}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:"Schibsted Grotesk",ui-sans-serif,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+  canvas{position:fixed;inset:0;z-index:1;display:block}
+  #ghost{position:fixed;z-index:0;left:calc(var(--edge) - .05em);top:calc(var(--nav) + 8px);font-weight:600;font-size:clamp(88px,19vw,290px);line-height:1;letter-spacing:-.05em;color:var(--acc);user-select:none;transition:opacity .3s ease-out}
+  body.paper #ghost{opacity:0}
+  #nav{position:fixed;z-index:3;top:0;left:0;right:0;height:var(--nav);box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;padding:0 var(--edge);background:var(--bg);border-bottom:1.5px solid var(--ink)}
+  #navL{display:flex;align-items:center;gap:22px}
+  #logo{display:inline-flex;align-items:baseline;font-weight:700;font-size:30px;line-height:1;letter-spacing:-.01em;color:var(--ink);text-decoration:none}
+  #logo i{font-style:normal;font-size:19px}
+  #where,#meta,#foot{font-family:"Geist Mono",ui-monospace,monospace}
+  #where{font-size:13px;letter-spacing:.04em;color:var(--dim)}
+  #navR{display:flex;gap:32px}
+  #navR a{font-weight:500;font-size:16px;color:var(--ink);text-decoration:none}
+  #navR a:hover{color:var(--acc)}
+  #meta{position:fixed;z-index:2;top:calc(var(--nav) + 20px);right:var(--edge);text-align:right;font-size:12px;line-height:1.75;letter-spacing:.03em;color:var(--dim);pointer-events:none}
+  #song{color:var(--ink)}
+  #song i{display:inline-block;width:8px;height:8px;margin-right:8px;background:var(--acc)}
+  #foot{position:fixed;z-index:2;left:var(--edge);bottom:calc(var(--strip) + 20px);max-width:52%;font-size:12px;line-height:1.7;letter-spacing:.02em;color:var(--dim);pointer-events:none}
+  #views{position:fixed;z-index:2;right:var(--edge);bottom:calc(var(--strip) + 20px);display:flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden;background:var(--bg)}
+  .vbtn{padding:13px 24px;border:0;background:transparent;color:var(--ink);font-family:inherit;font-weight:600;font-size:15px;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
+  .vbtn:hover{background:#E0E3E8}
+  .vbtn.on{background:var(--ink);color:#fff}
+  #dock{position:fixed;z-index:3;left:0;right:0;bottom:0;height:var(--strip);display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg);border-top:1.5px solid var(--ink)}
+  .fig{display:flex;flex-direction:column;justify-content:space-between;min-width:0;padding:15px 24px 16px;border:0;border-right:1.5px solid var(--ink);background:transparent;color:var(--ink);font-family:inherit;text-align:left;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
+  .fig:first-child{padding-left:var(--edge)}
+  .fig:last-child{border-right:0;padding-right:var(--edge)}
+  .fig:hover{background:#E0E3E8}
+  .fig.on{background:var(--ink);color:var(--bg)}
+  .figTop{display:flex;justify-content:space-between;align-items:center;font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
+  .figName{font-weight:600;font-size:46px;line-height:1;letter-spacing:-.035em;transition:transform .15s ease-out}
+  .fig:active .figName{transform:translateY(1px)}
+  .glyph{display:grid;grid-template-columns:repeat(7,4px);grid-auto-rows:4px;gap:1px}
+  .glyph b{background:currentColor}
+  .glyph b.off{visibility:hidden}
+  .fig.on .glyph{color:var(--acc)}
+  .fig:focus-visible,.vbtn:focus-visible,#logo:focus-visible,#navR a:focus-visible{outline:2px solid var(--acc);outline-offset:-4px}
+  @media (max-width:760px){
+    :root{--edge:18px;--strip:92px;--nav:56px}
+    #where,#navR a:last-child{display:none}
+    #meta{left:var(--edge);right:auto;top:calc(var(--nav) + 104px);text-align:left;font-size:11px}
+    #foot{display:none}
+    #views{left:var(--edge);right:var(--edge)}
+    .vbtn{flex:1}
+    .fig{padding:11px 10px}
+    .fig:first-child{padding-left:var(--edge)}
+    .fig:last-child{padding-right:10px}
+    .figName{font-size:22px;letter-spacing:-.02em}
+    .glyph{grid-template-columns:repeat(7,3px);grid-auto-rows:3px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="ghost">Dog</div>
+<nav id="nav">
+  <div id="navL">
+    <a id="logo" href="/#top" target="_top" aria-label="QaRt home">Q<i>a</i>R<i>t</i></a>
+    <span id="where">02 — CONSTELLATION</span>
+  </div>
+  <div id="navR"><a href="/#index" target="_top">Projects</a><a href="/#why" target="_top">Why</a></div>
+</nav>
+<div id="meta">
+  <div id="song"><i></i><span id="songL">—</span></div>
+  <div id="count"></div>
+</div>
+<div id="foot">
+  <div id="hint"></div>
+  <div id="zoomHint">SCROLL — ZOOM TO THE PIXEL</div>
+</div>
+<div id="views" role="group" aria-label="View">
+  <button class="vbtn on" id="bFig">Figure</button>
+  <button class="vbtn" id="bQR">QR</button>
+</div>
+<div id="dock"></div>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const FIGS = [
+  {key:'perro', label:'Dog', file:'./perroqr3d.html', song:'“Something” · The Beatles', accent:0xFF3D00, ghost:'Dog', figAzi:18, qrRoll:0,
+   glyph:["#......","##....#","#####.#",".######",".#####.",".#..#..",".#..#.."]},
+  {key:'auto', label:'Car', file:'./qart3d.html', song:'“Help!” · The Beatles', accent:0xFF3D00, ghost:'Car', figAzi:-24, qrRoll:35,
+   glyph:[".......","..###..",".#.#.#.","#######","#######",".#...#.","......."],
+   front:[
+    "..................................................",
+    ".....................##########...................",
+    "...................##############.................",
+    "..................##.....##.....##................",
+    ".................##......##......##...............",
+    "................##.......##.......##..............",
+    "...............##........##........##.............",
+    "..............##.........##.........##............",
+    ".............##..........##..........##...........",
+    "............############################..........",
+    "..#############################################...",
+    ".########....########################....#######..",
+    "#######...##...####################...##...######.",
+    "######..######..##################..######..######",
+    "######.########.##################.########.######",
+    "#####.##########.################.##########.#####",
+    "#####.###....###.################.###....###.#####",
+    "......###....###..................###....###......",
+    "......###....###..................###....###......",
+    "......##########..................##########......",
+    ".......########....................########.......",
+    "........######......................######........",
+    "..........##..........................##..........",
+    "##################################################",
+    "##################################################"
+   ]},
+  {key:'cafe', label:'Coffee', file:'./cafe3d.html', song:'“Twist and Shout” · The Beatles', accent:0xFF3D00, ghost:'Coffee', figAzi:30, qrRoll:70,
+   glyph:["..#.#..",".......","#####..","#####.#","#####.#","#####..",".###..."]},
+  {key:'react', label:'React', file:'./react3d.html', song:'“Now and Then” · The Beatles', accent:0xFF3D00, ghost:'React', figAzi:-14, qrRoll:-40,
+   glyph:["..###..",".#...#.","#..#..#","#.###.#","#..#..#",".#...#.","..###.."]}
+];
+
+let seed = 7;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const smooth = p => p*p*(3-2*p);
+const easeOutQuint = p => 1 - Math.pow(1-p, 5);
+
+// ---- pull data from the original sculptures ----
+const grab = (txt, name) => JSON.parse('[' + txt.match(new RegExp('const ' + name + ' = \\[([\\s\\S]*?)\\];'))[1] + ']');
+const S = 0.3;
+function buildVoxels(FRONT, QR){
+  const QR2 = [];
+  for (const row of QR) { const r2 = row.split('').map(c => c + c).join(''); QR2.push(r2, r2); }
+  const H = FRONT.length, out = [], finder = [];
+  /* flag voxels landing in one of the QR's 7x7-module finder squares (doubled
+     to 14x14 cells) — those MUST stay solid black or a scanner can't even
+     locate the code, so they're excluded from the accent-color sprinkle */
+  const n2 = QR2.length, fEdge = 14, fFar = n2 - fEdge;
+  const isFinderCell = (x, z) => (x < fEdge || x >= fFar) && (z < fEdge || z >= fFar);
+  const cy = (H*S)/2;
+  for (let x = 0; x < 50; x++) {
+    const ys = [], zs = [];
+    FRONT.forEach((row, r) => { if (row[x] === '#') ys.push(H-1-r); });
+    QR2.forEach((row, r) => { if (row[x] === 'Q') zs.push(r); });
+    if (!ys.length || !zs.length) continue;
+    for (let i = ys.length-1; i > 0; i--) { const j = (rnd()*(i+1))|0; [ys[i],ys[j]] = [ys[j],ys[i]]; }
+    for (let i = zs.length-1; i > 0; i--) { const j = (rnd()*(i+1))|0; [zs[i],zs[j]] = [zs[j],zs[i]]; }
+    const n = Math.max(ys.length, zs.length);
+    for (let i = 0; i < n; i++) {
+      const z = zs[i % zs.length];
+      out.push([(x-24.5)*S, ys[i % ys.length]*S - cy, (z-24.5)*S]);
+      finder.push(isFinderCell(x, z));
+    }
+  }
+  return {vox: out, finder};
+}
+for (const f of FIGS) {
+  const txt = await (await fetch(f.file)).text();
+  f.qr = grab(txt, 'QR');
+  f.front = f.front || grab(txt, 'FRONT');
+  const built = buildVoxels(f.front, f.qr);
+  f.vox = built.vox;
+  f.finderFlags = built.finder;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const [x, y] of f.vox) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+  f.figW = maxX - minX; f.figH = maxY - minY;
+}
+const N = Math.max(...FIGS.map(f => f.vox.length));
+for (const f of FIGS) {
+  f.pos = [];
+  f.isFinder = [];
+  for (let i = 0; i < N; i++) {
+    const srcIdx = i % f.vox.length;
+    const p = f.vox[srcIdx];
+    f.pos.push(i < f.vox.length ? p : [p[0]+(rnd()-0.5)*0.04, p[1]+(rnd()-0.5)*0.04, p[2]+(rnd()-0.5)*0.04]);
+    f.isFinder.push(f.finderFlags[srcIdx]);
+  }
+  f.light = [];
+  f.dark = [];
+  const acc = new THREE.Color(f.accent);
+  for (let i = 0; i < N; i++) {
+    const v = 0.012 + rnd()*0.03;
+    const isAccent = !f.isFinder[i] && rnd() < 0.14;
+    const col = isAccent ? acc.clone().multiplyScalar(1.5 + rnd()*0.4)
+                         : new THREE.Color(v, v, v*1.05);
+    f.light.push(col);
+    /* printed/QR state keeps a dark tint of the accent (not neutral black) so
+       colored blocks stay visibly colored, but dark enough to hold contrast
+       for real-world scanning */
+    const d = 0.006 + rnd()*0.008;
+    f.dark.push(isAccent ? acc.clone().multiplyScalar(0.14 + rnd()*0.04) : new THREE.Color(d, d, d));
+  }
+}
+
+// ---- scene ----
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true, preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 600);
+let vpW = 0, vpH = 0;
+function sizeViewport(){
+  const w = innerWidth || 1200, h = innerHeight || 760;
+  if (w === vpW && h === vpH) return;
+  vpW = w; vpH = h;
+  renderer.setSize(w, h);
+  camera.aspect = w/h;
+  const cs = getComputedStyle(document.documentElement);
+  const shift = (parseFloat(cs.getPropertyValue('--strip')) - parseFloat(cs.getPropertyValue('--nav')))/2;
+  camera.setViewOffset(w, h, 0, shift, w, h);
+}
+document.body.prepend(renderer.domElement);
+sizeViewport();
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 0.3;
+controls.maxDistance = 160;
+controls.zoomSpeed = 1.15;
+
+const FIT_WIDTH = 23;
+const place = (polarDeg, aziDeg, wanted) => {
+  const dist = Math.max(wanted, FIT_WIDTH/(2*Math.tan(THREE.MathUtils.degToRad(15))*camera.aspect));
+  const p = THREE.MathUtils.degToRad(polarDeg), a = THREE.MathUtils.degToRad(aziDeg);
+  return new THREE.Vector3(dist*Math.sin(p)*Math.sin(a), dist*Math.cos(p), dist*Math.sin(p)*Math.cos(a));
+};
+camera.position.copy(place(74, 28, 44));
+camera.lookAt(0, 0, 0);
+const UP_Y = new THREE.Vector3(0, 1, 0);
+const upFor = (mode, f) => mode === 'fig' ? UP_Y.clone()
+  : new THREE.Vector3(Math.sin(THREE.MathUtils.degToRad(f.qrRoll)), 0, Math.cos(THREE.MathUtils.degToRad(f.qrRoll)));
+let tween = null;
+const flyTo = (p, a, d, up) => { tween = {s:camera.position.clone(), e:place(p, a, d), upS:camera.up.clone(), upE:up, t:0}; };
+window.setView = (p, a, d = 40) => { camera.position.copy(place(p, a, d)); camera.lookAt(0, 0, 0); };
+/* figures share the same nominal width (fixed 50-col canvas) but differ a lot in
+   drawn height — scale each figure's distance by its own height, calibrated so
+   the reference figure (dog) keeps the original, already-good d:40 framing */
+const FOV_HALF = THREE.MathUtils.degToRad(15);
+const REF_FIG = FIGS.find(x => x.key === 'perro');
+const HEIGHT_MARGIN = 40*Math.tan(FOV_HALF)/(REF_FIG.figH/2);
+const fitDist = h => (h/2*HEIGHT_MARGIN)/Math.tan(FOV_HALF);
+const viewTarget = (mode, f) => mode === 'fig'
+  ? {p:90, a:f.figAzi, d:fitDist(f.figH)}
+  : {p:4, a:0, d:76};
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x5A5D63, 1.25));
+const key = new THREE.DirectionalLight(0xffffff, 0.75);
+key.position.set(10, 18, 8);
+scene.add(key);
+
+// distant star dust
+const dustGeo = new THREE.BufferGeometry();
+const dustPos = new Float32Array(130*3);
+for (let i = 0; i < 130; i++) {
+  const a = rnd()*6.283, b = Math.acos(rnd()*2-1), r = 55 + rnd()*70;
+  dustPos[i*3] = r*Math.sin(b)*Math.cos(a);
+  dustPos[i*3+1] = r*Math.cos(b);
+  dustPos[i*3+2] = r*Math.sin(b)*Math.sin(a);
+}
+dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+const dustMat = new THREE.PointsMaterial({color:0x0A0A0A, size:0.4, transparent:true, opacity:0.35});
+scene.add(new THREE.Points(dustGeo, dustMat));
+
+const BS = S*0.94;
+const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(BS, BS, BS), new THREE.MeshLambertMaterial({color:0xffffff}), N);
+scene.add(mesh);
+
+let figIdx = 0;
+const blocks = [];
+for (let i = 0; i < N; i++) {
+  const p = FIGS[0].pos[i];
+  blocks.push({x:p[0], y:p[1], z:p[2], fx:p[0], fy:p[1], fz:p[2], tx:p[0], ty:p[1], tz:p[2],
+    t:1, delay:0, dur:0.75, ph:rnd()*6.28, sp:0.4+rnd()*0.5, colT:1});
+  mesh.setColorAt(i, FIGS[0].light[i]);
+}
+mesh.instanceColor.needsUpdate = true;
+
+let inkT = 0, inkTarget = 0;
+let view = 'fig';
+let morphT = 10;
+
+const dock = document.getElementById('dock');
+const ghost = document.getElementById('ghost');
+const songL = document.getElementById('songL');
+const hint = document.getElementById('hint');
+const figBtns = [];
+FIGS.forEach((f, idx) => {
+  const b = document.createElement('button');
+  b.className = 'fig' + (idx === 0 ? ' on' : '');
+  b.setAttribute('aria-pressed', String(idx === 0));
+  const top = document.createElement('span');
+  top.className = 'figTop';
+  const no = document.createElement('span');
+  no.textContent = String(idx + 1).padStart(2, '0');
+  const g = document.createElement('span');
+  g.className = 'glyph';
+  for (const row of f.glyph) for (const ch of row) {
+    const c = document.createElement('b');
+    if (ch !== '#') c.className = 'off';
+    g.appendChild(c);
+  }
+  top.append(no, g);
+  const l = document.createElement('span');
+  l.className = 'figName';
+  l.textContent = f.label;
+  b.append(top, l);
+  b.addEventListener('click', () => selectFig(idx));
+  dock.appendChild(b);
+  figBtns.push(b);
+});
+addEventListener('resize', sizeViewport);
+document.getElementById('count').textContent = String(N).replace(/\B(?=(\d{3})+$)/g, ',') + ' BLOCKS · 4 FIGURES';
+hint.textContent = 'one cloud of blocks — pick a figure and watch it reorder itself';
+
+function selectFig(idx){
+  if (idx === figIdx) return;
+  figIdx = idx;
+  const f = FIGS[idx];
+  figBtns.forEach((b, i) => { b.classList.toggle('on', i === idx); b.setAttribute('aria-pressed', String(i === idx)); });
+  ghost.style.opacity = 0;
+  setTimeout(() => { ghost.textContent = f.ghost; ghost.style.opacity = ''; }, 180);
+  songL.textContent = f.song;
+  morphT = 0;
+  for (let i = 0; i < N; i++) {
+    const b = blocks[i];
+    const e = b.t >= 1 ? 1 : easeOutQuint(Math.max(0, b.t));
+    b.fx = b.fx + (b.tx - b.fx)*e; b.fy = b.fy + (b.ty - b.fy)*e; b.fz = b.fz + (b.tz - b.fz)*e;
+    const p = f.pos[i];
+    b.tx = p[0]; b.ty = p[1]; b.tz = p[2];
+    b.t = 0; b.delay = rnd()*0.3; b.dur = 0.7 + rnd()*0.4; b.colT = 0;
+  }
+  const t = viewTarget(view, f);
+  flyTo(t.p, t.a, t.d, upFor(view, f));
+  hint.textContent = 'the cloud reorders itself — same blocks, new figure, new code';
+}
+songL.textContent = FIGS[0].song;
+
+const bFig = document.getElementById('bFig'), bQR = document.getElementById('bQR');
+function setViewMode(m){
+  view = m;
+  bFig.classList.toggle('on', m === 'fig');
+  bQR.classList.toggle('on', m === 'qr');
+  inkTarget = m === 'qr' ? 1 : 0;
+  document.body.classList.toggle('paper', m === 'qr');
+  const f = FIGS[figIdx];
+  const t = viewTarget(m, f);
+  flyTo(t.p, t.a, t.d, upFor(m, f));
+  hint.textContent = m === 'fig' ? 'face on, the figure — drag to orbit' : 'from above, the code — the constellation prints itself · scan it';
+}
+bFig.addEventListener('click', () => setViewMode('fig'));
+bQR.addEventListener('click', () => setViewMode('qr'));
+
+let autoRot = !matchMedia('(prefers-reduced-motion: reduce)').matches, resumeT = 0;
+controls.addEventListener('start', () => { autoRot = false; resumeT = 5; });
+
+window.__state = () => ({fig:FIGS[figIdx].key, view, blocks:N, frames:window.__fr||0, inkT:+inkT.toFixed(2)});
+window.__figs = () => FIGS.map(f => ({key:f.key, h:+f.figH.toFixed(2), d:+viewTarget('fig', f).d.toFixed(1)}));
+
+const C2 = new THREE.Color();
+const M = new THREE.Matrix4(), V = new THREE.Vector3(), Q = new THREE.Quaternion(), SCv = new THREE.Vector3(1,1,1);
+const E = new THREE.Euler();
+const clock = new THREE.Clock();
+let simT = 0;
+function step(dt){
+  simT += dt; morphT += dt;
+  const f = FIGS[figIdx];
+
+  inkT += (inkTarget - inkT)*Math.min(1, dt*2.6);
+  dustMat.opacity = 0.35*(1 - inkT);
+  /* close the gaps between blocks and flatten them into thin printed tiles as
+     they settle into the QR read — a real scanner needs solid, grid-aligned
+     modules, not visibly gapped, uneven-height cubes */
+  const ink = smooth(inkT);
+  SCv.set(THREE.MathUtils.lerp(1, 1.15, ink), THREE.MathUtils.lerp(1, 0.16, ink), THREE.MathUtils.lerp(1, 1.15, ink));
+
+  const moving = morphT < 1.8;
+  let colorDirty = false;
+  for (let i = 0; i < N; i++) {
+    const b = blocks[i];
+    if (b.t < 1) b.t = Math.min(1, b.t + (morphT > b.delay ? dt/b.dur : 0));
+    const e = easeOutQuint(b.t);
+    const wob = Math.sin(b.t*6 + b.ph)*0.5*(b.t*(1-b.t));
+    b.x = b.fx + (b.tx - b.fx)*e + wob*0.4;
+    b.y = b.fy + (b.ty - b.fy)*e + Math.cos(b.t*5 + b.ph)*0.3*(b.t*(1-b.t));
+    b.z = b.fz + (b.tz - b.fz)*e + wob*0.3;
+    const bob = Math.sin(simT*b.sp + b.ph)*0.02*(1-inkT);
+    const flatY = THREE.MathUtils.lerp(b.y, 0, smooth(inkT));
+    V.set(b.x, flatY + bob, b.z);
+    const spin = (1-e)*0.9;
+    E.set(spin*0.5, spin, spin*0.3);
+    Q.setFromEuler(E);
+    M.compose(V, Q, SCv);
+    mesh.setMatrixAt(i, M);
+    if (b.colT < 1 || Math.abs(inkT - (b.inkPainted ?? -1)) > 0.02) {
+      b.colT = Math.min(1, b.colT + dt*2.2);
+      C2.copy(f.light[i]).lerp(f.dark[i], smooth(inkT));
+      mesh.setColorAt(i, C2);
+      b.inkPainted = inkT;
+      colorDirty = true;
+    }
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  if (colorDirty) mesh.instanceColor.needsUpdate = true;
+
+  if (!autoRot && resumeT > 0) { resumeT -= dt; if (resumeT <= 0 && view === 'fig') autoRot = true; }
+  if (autoRot && view === 'fig' && !tween) {
+    const dir = camera.position.clone();
+    const ang = Math.atan2(dir.x, dir.z) + dt*0.07;
+    const rxz = Math.hypot(dir.x, dir.z);
+    camera.position.set(Math.sin(ang)*rxz, dir.y, Math.cos(ang)*rxz);
+    camera.lookAt(0, 0, 0);
+  }
+
+  if (tween) {
+    tween.t += dt/1.0;
+    const k = easeOutQuint(Math.min(1, tween.t));
+    camera.position.lerpVectors(tween.s, tween.e, k);
+    camera.up.lerpVectors(tween.upS, tween.upE, k).normalize();
+    if (tween.t >= 1) tween = null;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+function animate(){
+  window.__fr = (window.__fr||0)+1;
+  requestAnimationFrame(animate);
+  if ((window.__fr & 31) === 0) sizeViewport();
+  step(Math.min(clock.getDelta(), 0.05));
+}
+animate();
+window.__step = step;
+window.__selectFig = selectFig;
+window.__setViewMode = setViewMode;
+</script>
+</body>
+</html>

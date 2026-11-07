@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Rain Cloud 3D</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(1200px 800px at 50% 28%,#1c2344,#0e1226);font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Inter,sans-serif;color:#eef2ff}
+  canvas{display:block}
+  #ui{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:22px 26px;box-sizing:border-box}
+  header h1{font-size:14px;letter-spacing:.22em;margin:0;font-weight:700}
+  header p{margin:5px 0 0;font-size:12px;color:#8e97b8;letter-spacing:.04em}
+  #foot{display:flex;flex-direction:column;align-items:center;gap:12px}
+  #hint{font-size:12px;color:#8e97b8;letter-spacing:.04em;transition:color .4s}
+  #btn{pointer-events:auto;border:0;border-radius:12px;padding:14px 30px;font-size:13px;font-weight:700;letter-spacing:.14em;color:#10142a;background:linear-gradient(180deg,#ffd94d,#f2b23a);cursor:pointer;box-shadow:0 8px 22px rgba(244,181,58,.32),inset 0 1px 0 rgba(255,255,255,.5);transition:transform .08s,filter .2s}
+  #btn:hover{filter:brightness(1.06)}
+  #btn:active{transform:translateY(2px)}
+  #btn:disabled{filter:saturate(.4) brightness(.8);cursor:default}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="ui">
+  <header>
+    <h1>RAIN CLOUD · 3D</h1>
+    <p>drag to rotate &nbsp;·&nbsp; scroll to zoom in &nbsp;·&nbsp; look at it from above</p>
+  </header>
+  <div id="foot">
+    <div id="hint">every drop is a cube — when they land they form the QR code</div>
+    <button id="btn">GENERATE QR</button>
+  </div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const QR = [
+"QQQQQQQ...Q.Q..QQ.QQQQQQQ",
+"Q.....Q.Q...QQQ.Q.Q.....Q",
+"Q.QQQ.Q.QQQ..Q.Q..Q.QQQ.Q",
+"Q.QQQ.Q.Q.Q.....Q.Q.QQQ.Q",
+"Q.QQQ.Q...Q.Q..QQ.Q.QQQ.Q",
+"Q.....Q..QQ.Q..Q..Q.....Q",
+"QQQQQQQ.Q.Q.Q.Q.Q.QQQQQQQ",
+"........Q.....QQQ........",
+"Q.....Q.Q..Q.....QQ..QQQ.",
+".....Q.Q..QQQQ..Q..QQQQQ.",
+".Q..QQQ..QQQQQQQ.QQ..Q.QQ",
+"..QQ.Q.QQQ.Q.Q.QQQQ..Q..Q",
+"Q.Q.QQQ.QQ.QQQ.Q..Q.....Q",
+"QQQQQ..QQ.Q....QQ..Q...Q.",
+"Q.....Q.Q..QQ..QQQ.QQQ.QQ",
+"Q.QQ....QQ.Q.......Q.QQ.Q",
+"Q.Q.QQQ.Q..Q...QQQQQQ.Q..",
+"........Q...QQQ.Q...Q....",
+"QQQQQQQ...QQ....Q.Q.Q...Q",
+"Q.....Q..Q..QQ.QQ...Q..Q.",
+"Q.QQQ.Q..QQ.Q.QQQQQQQ.QQ.",
+"Q.QQQ.Q..Q....Q.Q.Q.....Q",
+"Q.QQQ.Q..Q.QQ........QQ.Q",
+"Q.....Q...QQ..Q.QQ.QQ...Q",
+"QQQQQQQ.QQQ..QQ.QQ...Q..Q"];
+
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x10152e, 32, 60);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.1, 120);
+camera.position.set(13.5, 9.5, 15.5);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 4.2, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.minDistance = 8;
+controls.maxDistance = 38;
+controls.maxPolarAngle = Math.PI * 0.55;
+
+window.setView = (polarDeg, aziDeg, dist = 22) => {
+  const p = THREE.MathUtils.degToRad(polarDeg), a = THREE.MathUtils.degToRad(aziDeg);
+  const t = controls.target;
+  camera.position.set(
+    t.x + dist*Math.sin(p)*Math.sin(a),
+    t.y + dist*Math.cos(p),
+    t.z + dist*Math.sin(p)*Math.cos(a)
+  );
+  camera.lookAt(t);
+};
+
+scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x2c3350, 0.95));
+const sun = new THREE.DirectionalLight(0xffffff, 0.85);
+sun.position.set(9, 16, 7);
+scene.add(sun);
+const fillLight = new THREE.DirectionalLight(0x6f87ff, 0.25);
+fillLight.position.set(-8, 6, -10);
+scene.add(fillLight);
+
+// ---------- square ground ----------
+const S = 15;
+const ground = new THREE.Mesh(
+  new THREE.BoxGeometry(S, 0.22, S),
+  new THREE.MeshLambertMaterial({color:0x1b2142})
+);
+ground.position.y = -0.11;
+scene.add(ground);
+const rimMat = new THREE.MeshBasicMaterial({color:0x3b4a86});
+[[0,-S/2],[0,S/2],[-S/2,0],[S/2,0]].forEach(([x,z], i) => {
+  const r = new THREE.Mesh(new THREE.BoxGeometry(i<2?S+0.1:0.1, 0.08, i<2?0.1:S+0.1), rimMat);
+  r.position.set(x, 0.02, z);
+  scene.add(r);
+});
+
+// ---------- fine voxel cloud ----------
+const CS = 0.25;
+const blobs = [
+  [-3.7, 7.4,  0.0, 2.5],
+  [-1.6, 8.2,  0.8, 2.9],
+  [ 0.7, 8.5, -0.4, 3.1],
+  [ 2.9, 7.9,  0.6, 2.6],
+  [ 4.3, 7.2, -0.6, 2.0],
+  [-2.7, 7.0, -1.9, 2.1],
+  [ 1.6, 7.1,  2.1, 2.2],
+  [ 3.1, 7.0, -2.1, 1.9],
+  [-0.6, 7.0,  2.5, 2.0],
+  [-4.6, 7.0,  1.0, 1.7]
+];
+let seed = 11;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+const cloudCells = [];
+for (let x = -7.5; x <= 7.5; x += CS)
+for (let y = 5.9;  y <= 11.6; y += CS)
+for (let z = -5.0; z <= 5.0; z += CS) {
+  let m = -1e9;
+  for (const [bx,by,bz,r] of blobs) {
+    const dx = x-bx, dy = (y-by)*1.22, dz = z-bz;
+    const v = 1 - (dx*dx + dy*dy + dz*dz)/(r*r);
+    if (v > m) m = v;
+  }
+  if (m > -0.5) cloudCells.push([x,y,z,m]);
+}
+const cloudGeo = new THREE.BoxGeometry(CS*0.98, CS*0.98, CS*0.98);
+const cloudMat = new THREE.MeshLambertMaterial({color:0xffffff, transparent:true, opacity:1});
+const cloud = new THREE.InstancedMesh(cloudGeo, cloudMat, cloudCells.length);
+const M = new THREE.Matrix4();
+const C = new THREE.Color();
+let yMin = 1e9, yMax = -1e9;
+cloudCells.forEach(([,y]) => { yMin = Math.min(yMin,y); yMax = Math.max(yMax,y); });
+cloudCells.forEach(([x,y,z], i) => {
+  M.makeTranslation(x, y, z);
+  cloud.setMatrixAt(i, M);
+  const t = (y - yMin) / (yMax - yMin);
+  const v = 0.74 + t*0.26 + (rnd()-0.5)*0.05;
+  C.setRGB(v*0.96, v*0.985, Math.min(1, v*1.06));
+  cloud.setColorAt(i, C);
+});
+cloud.instanceColor.needsUpdate = true;
+scene.add(cloud);
+
+// edge cells: their scale breathes with slow noise and the cloud changes shape
+const shell = [];
+cloudCells.forEach(([x,y,z,m], i) => { if (m < 0.65) shell.push([i,x,y,z,m]); });
+
+// lightning inside the cloud
+const flash = new THREE.PointLight(0xcfe2ff, 0, 15);
+scene.add(flash);
+let nextFlash = 2.5, flashT = 9;
+const PV = new THREE.Vector3(), SV = new THREE.Vector3(1,1,1);
+const IQ = new THREE.Quaternion();
+const smooth = p => p*p*(3-2*p);
+
+// bottom cells of the cloud: drops are born from there
+const bottomMap = new Map();
+cloudCells.forEach(([x,y,z,m]) => {
+  if (m <= 0) return;
+  const k = x.toFixed(2)+'|'+z.toFixed(2);
+  if (!bottomMap.has(k) || y < bottomMap.get(k)[1]) bottomMap.set(k, [x,y,z]);
+});
+const bottoms = [...bottomMap.values()];
+
+// ---------- rain: the same falling drops build the QR ----------
+const MSZ = 0.336;
+const modules = [];
+QR.forEach((row, r) => [...row].forEach((ch, c) => {
+  if (ch === 'Q') modules.push({x:(c-12)*MSZ, z:(r-12)*MSZ});
+}));
+const DS = 0.13;
+const NDROPS = modules.length + 60;
+const KS = MSZ/DS;
+const dropGeo = new THREE.BoxGeometry(DS, DS, DS);
+const dropMat = new THREE.MeshLambertMaterial({color:0xffffff, emissive:0x0a1f3a});
+const rain = new THREE.InstancedMesh(dropGeo, dropMat, NDROPS);
+const dropColors = [0x4fa9f7, 0x8ccbff, 0x2e7cd6];
+const HIDE = new THREE.Matrix4().makeScale(0,0,0);
+const drops = [];
+const spawnDrop = d => {
+  const b = bottoms[(rnd()*bottoms.length)|0];
+  d.x = b[0]+(rnd()-0.5)*0.3; d.z = b[2]+(rnd()-0.5)*0.3;
+  d.y = b[1]-0.4-rnd()*5.5; d.sp = 4.5+rnd()*3.5;
+  d.on = true; d.landed = false; d.ti = -1; d.wait = 0;
+};
+for (let i = 0; i < NDROPS; i++) {
+  const d = {};
+  spawnDrop(d);
+  drops.push(d);
+  C.set(dropColors[(rnd()*3)|0]);
+  rain.setColorAt(i, C);
+}
+rain.instanceColor.needsUpdate = true;
+scene.add(rain);
+
+// ---------- interaction ----------
+const btn = document.getElementById('btn');
+const hint = document.getElementById('hint');
+let mode = 'rain';
+let landedCount = 0;
+
+btn.addEventListener('click', () => {
+  if (mode === 'rain') {
+    const idx = drops.map((_, i) => i);
+    for (let i = idx.length-1; i > 0; i--) { const j = (rnd()*(i+1))|0; [idx[i],idx[j]] = [idx[j],idx[i]]; }
+    modules.forEach((m, k) => {
+      const d = drops[idx[k]];
+      d.ti = k; d.tx = m.x; d.tz = m.z;
+      d.y0 = 6.2 + rnd()*1.4;
+      d.y = d.y0;
+      d.sp = 3.2 + rnd()*0.8;
+      d.wait = (idx[k] / NDROPS) * 4.5;
+      d.on = true; d.landed = false;
+    });
+    mode = 'forming'; landedCount = 0;
+    btn.disabled = true; btn.textContent = 'GENERATING…';
+    hint.textContent = 'the rain stops — new drops fall straight down and build the QR…';
+  } else if (mode === 'done') {
+    drops.forEach(d => spawnDrop(d));
+    mode = 'rain';
+    btn.textContent = 'GENERATE QR';
+    hint.textContent = 'every drop is a cube — when they land they form the QR code';
+  }
+});
+window.__state = () => ({mode, landedCount, total:modules.length, frames:window.__fr||0});
+
+// ---------- animación ----------
+const clock = new THREE.Clock();
+let simT = 0;
+function step(dt){
+  simT += dt;
+  const t = simT;
+
+  // the cloud drifts
+  cloud.position.set(Math.sin(t*0.4)*0.3, Math.sin(t*0.7)*0.16, Math.cos(t*0.33)*0.22);
+
+  // slow morph: the edge cells grow and shrink with drifting noise
+  if (cloud.visible) {
+    for (const [i,x,y,z,m] of shell) {
+      const wob = Math.sin(x*0.9 + t*0.4) + Math.sin(z*1.2 - t*0.31) + Math.sin(y*0.8 + x*0.5 + t*0.23);
+      const s = Math.max(0, Math.min(1, (m + 0.14*wob + 0.02) * 4));
+      if (s <= 0.01) { cloud.setMatrixAt(i, HIDE); continue; }
+      PV.set(x, y, z); SV.set(s, s, s);
+      M.compose(PV, IQ, SV);
+      cloud.setMatrixAt(i, M);
+    }
+    cloud.instanceMatrix.needsUpdate = true;
+  }
+
+  // flashes of light inside the cloud
+  flashT += dt;
+  if (t > nextFlash) {
+    nextFlash = t + 2 + rnd()*4.5;
+    flashT = 0;
+    const cc = cloudCells[(rnd()*cloudCells.length)|0];
+    flash.position.set(cc[0], cc[1], cc[2]);
+  }
+
+  // top view: the cloud fades and leaves only the drops visible
+  const camDir = camera.position.clone().sub(controls.target);
+  const polar = Math.acos(Math.min(1, Math.max(-1, camDir.y / camDir.length())));
+  const fadeTarget = THREE.MathUtils.clamp((THREE.MathUtils.radToDeg(polar) - 22) / 26, 0, 1);
+  cloudMat.opacity += (fadeTarget - cloudMat.opacity) * Math.min(1, dt*6);
+  cloud.visible = cloudMat.opacity > 0.02;
+  flash.intensity = (flashT < 0.5 ? 70*Math.exp(-flashT*8)*(0.55+0.45*Math.sin(flashT*85)) : 0) * cloudMat.opacity;
+
+  drops.forEach((d, i) => {
+    if (!d.on) { rain.setMatrixAt(i, HIDE); return; }
+    if (d.landed) return;
+    if (mode === 'rain') {
+      d.y -= d.sp*dt;
+      if (d.y < 0.12) spawnDrop(d);
+      M.makeTranslation(d.x, d.y, d.z);
+      rain.setMatrixAt(i, M);
+    } else if (d.ti >= 0) {
+      if (d.wait > 0) { d.wait -= dt; rain.setMatrixAt(i, HIDE); return; }
+      d.y -= d.sp*dt;
+      const p = Math.max(0, Math.min(1, 1 - d.y/d.y0));
+      if (d.y <= MSZ/2 + 0.11) {
+        d.landed = true; landedCount++;
+        PV.set(d.tx, MSZ/2 + 0.11, d.tz);
+        SV.set(KS, KS, KS);
+        M.compose(PV, IQ, SV);
+        rain.setMatrixAt(i, M);
+        if (landedCount === modules.length) {
+          mode = 'done';
+          btn.disabled = false; btn.textContent = 'RAIN AGAIN';
+          hint.textContent = 'the falling drops formed the QR — look at it from above · pen.dev';
+        }
+      } else {
+        const k = 1 + (KS-1)*smooth(p);
+        PV.set(d.tx, d.y, d.tz);
+        SV.set(k, k, k);
+        M.compose(PV, IQ, SV);
+        rain.setMatrixAt(i, M);
+      }
+    } else {
+      d.y -= d.sp*dt;
+      if (d.y < 0.12) { d.on = false; rain.setMatrixAt(i, HIDE); return; }
+      M.makeTranslation(d.x, d.y, d.z);
+      rain.setMatrixAt(i, M);
+    }
+  });
+  rain.instanceMatrix.needsUpdate = true;
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+function animate(){
+  window.__fr = (window.__fr||0)+1;
+  requestAnimationFrame(animate);
+  step(Math.min(clock.getDelta(), 0.05));
+}
+animate();
+window.__step = step;
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

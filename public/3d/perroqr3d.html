@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Dog ↔ QR · Voxel Sculpture</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#ece8e0;font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Inter,sans-serif;color:#1d1a16}
+  canvas{display:block}
+  #ui{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:22px 26px;box-sizing:border-box}
+  header h1{font-size:14px;letter-spacing:.22em;margin:0;font-weight:700}
+  header p{margin:5px 0 0;font-size:12px;color:#7a7265;letter-spacing:.04em}
+  #foot{display:flex;flex-direction:column;align-items:center;gap:12px}
+  #hint{font-size:12px;color:#7a7265;letter-spacing:.04em;transition:color .4s;text-align:center}
+  #btns{display:flex;gap:10px}
+  .btn{pointer-events:auto;border:0;border-radius:12px;padding:13px 22px;font-size:12px;font-weight:700;letter-spacing:.14em;cursor:pointer;transition:transform .08s,filter .2s;box-shadow:0 6px 16px rgba(29,26,22,.18),inset 0 1px 0 rgba(255,255,255,.25)}
+  .btn:hover{filter:brightness(1.08)}
+  .btn:active{transform:translateY(2px)}
+  .dark{color:#f4f1ea;background:linear-gradient(180deg,#2b2721,#15120e)}
+  .light{color:#15120e;background:linear-gradient(180deg,#ffffff,#e4ddd0)}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="ui">
+  <header>
+    <h1>DOG ↔ QR · VOXEL SCULPTURE</h1>
+    <p>from the front, a detailed dog · from above, a QR to “Something” by The Beatles</p>
+  </header>
+  <div id="foot">
+    <div id="hint">spins on its own — drag to explore · every block belongs to both images at once</div>
+    <div id="btns">
+      <button id="bFront" class="btn dark">SEE DOG</button>
+      <button id="bTop" class="btn dark">SEE QR</button>
+      <button id="bScatter" class="btn light">SCATTER</button>
+    </div>
+  </div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const QR = [
+"QQQQQQQ...Q.......QQQQQQQ",
+"Q.....Q.QQQ...QQ..Q.....Q",
+"Q.QQQ.Q.Q.....QQ..Q.QQQ.Q",
+"Q.QQQ.Q..Q....Q...Q.QQQ.Q",
+"Q.QQQ.Q.QQQ.QQQQ..Q.QQQ.Q",
+"Q.....Q.Q.Q.QQ.QQ.Q.....Q",
+"QQQQQQQ.Q.Q.Q.Q.Q.QQQQQQQ",
+"........Q.QQ..QQ.........",
+"QQ.Q..QQ.....QQ.Q.QQQ.QQ.",
+"..QQ....QQ.QQ...QQQ.....Q",
+"Q...Q.QQ.....Q...Q..Q..QQ",
+"Q....Q.QQQQ.QQQ..QQQ.....",
+"Q..QQQQ...Q.Q...QQQQ.Q.QQ",
+".QQ..Q.Q.Q..Q.....QQ.QQ.Q",
+"Q.QQQ.Q.Q.QQQ.Q.Q.QQQ.Q.Q",
+".Q..Q...Q...QQ..Q...Q..Q.",
+"QQ...QQQ.Q..Q..QQQQQQQQ..",
+"........QQQ.QQ.QQ...QQ..Q",
+"QQQQQQQ.QQ...QQQQ.Q.QQ.QQ",
+"Q.....Q...QQ...QQ...QQQQ.",
+"Q.QQQ.Q..Q.QQ.Q.QQQQQQ...",
+"Q.QQQ.Q.Q...Q.Q....QQQQ..",
+"Q.QQQ.Q..QQ...QQ.Q.QQ.Q.Q",
+"Q.....Q.QQQ..QQ.QQ...Q...",
+"QQQQQQQ.QQ...QQQQ.QQ...QQ"];
+
+const FRONT = [
+"......##......................................####",
+".....####....................................####.",
+".....#####..................................####..",
+"....#######................................####...",
+"...########...............................####....",
+"..##########..............................###.....",
+"..###########............................####.....",
+"..####..#####............................###......",
+"######..#####...........................####......",
+"##############..........................###.......",
+"##############..........................###.......",
+".##############........................####.......",
+"..###############.....................#####.......",
+"...#########################################......",
+".....#######################################......",
+"......#####################################.......",
+".......####################################.......",
+".......####################################.......",
+".......####################################.......",
+".......####################################.......",
+".......####################################.......",
+"........###################################.......",
+"........###################################.......",
+"........############............###########.......",
+"........#####..#####.............#####.#####......",
+".........####...####..............####..####......",
+".........####...####..............####..####......",
+".........####...####..............####..####......",
+".........####...####..............####..####......",
+".........####...####..............####..####......",
+"........#####..#####.............#####.#####......",
+".......######.######............############......"];
+
+const QR2 = [];
+for (const row of QR) {
+  const r2 = row.split('').map(c => c + c).join('');
+  QR2.push(r2, r2);
+}
+
+const N_COLS = 50, H = FRONT.length;
+const S = 0.3;
+const Y0 = 2.6;
+const CX = (N_COLS - 1) / 2;
+const CENTER_Y = Y0 + (H*S)/2;
+
+let seed = 7;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const shuffle = a => { for (let i = a.length-1; i > 0; i--) { const j = (rnd()*(i+1))|0; [a[i],a[j]] = [a[j],a[i]]; } return a; };
+const smooth = p => p*p*(3-2*p);
+
+const voxels = [];
+for (let x = 0; x < N_COLS; x++) {
+  const ys = [], zs = [];
+  FRONT.forEach((row, r) => { if (row[x] === '#') ys.push(H-1-r); });
+  QR2.forEach((row, r) => { if (row[x] === 'Q') zs.push(r); });
+  if (!ys.length || !zs.length) { console.warn('empty column', x); continue; }
+  shuffle(ys); shuffle(zs);
+  const n = Math.max(ys.length, zs.length);
+  for (let i = 0; i < n; i++) {
+    voxels.push({
+      hx: (x-CX)*S,
+      hy: Y0 + ys[i % ys.length]*S,
+      hz: (zs[i % zs.length]-CX)*S
+    });
+  }
+}
+const N = voxels.length;
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xece8e0);
+scene.fog = new THREE.Fog(0xece8e0, 320, 650);
+
+const camera = new THREE.PerspectiveCamera(9, innerWidth/innerHeight, 1, 900);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, CENTER_Y, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.minDistance = 60;
+controls.maxDistance = 460;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 1.1;
+let resumeT = 0;
+const pauseSpin = (delay = 5) => { controls.autoRotate = false; resumeT = delay; };
+controls.addEventListener('start', () => pauseSpin(5));
+
+const place = (polarDeg, aziDeg, dist) => {
+  const p = THREE.MathUtils.degToRad(polarDeg), a = THREE.MathUtils.degToRad(aziDeg);
+  const t = controls.target;
+  return new THREE.Vector3(
+    t.x + dist*Math.sin(p)*Math.sin(a),
+    t.y + dist*Math.cos(p),
+    t.z + dist*Math.sin(p)*Math.cos(a)
+  );
+};
+camera.position.copy(place(64, 38, 210));
+camera.lookAt(controls.target);
+
+window.__cam = () => camera.position.toArray();
+window.setView = (polarDeg, aziDeg, dist = 210) => {
+  camera.position.copy(place(polarDeg, aziDeg, dist));
+  camera.lookAt(controls.target);
+};
+
+let tween = null;
+const flyTo = (polarDeg, aziDeg, dist) => {
+  pauseSpin(10);
+  tween = {start: camera.position.clone(), end: place(polarDeg, aziDeg, dist), t: 0};
+};
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xb8b0a2, 1.15));
+const sun = new THREE.DirectionalLight(0xfff4e0, 0.95);
+sun.position.set(4, 70, 3);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -22; sun.shadow.camera.right = 22;
+sun.shadow.camera.top = 22; sun.shadow.camera.bottom = -22;
+sun.shadow.camera.near = 10; sun.shadow.camera.far = 120;
+sun.shadow.bias = -0.0005;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xdfe6ff, 0.3);
+fill.position.set(-20, 14, -24);
+scene.add(fill);
+
+const floor = new THREE.Mesh(
+  new THREE.BoxGeometry(24, 0.5, 24),
+  new THREE.MeshStandardMaterial({color:0xfbfaf7, roughness:0.92})
+);
+floor.position.y = -0.25;
+floor.receiveShadow = true;
+scene.add(floor);
+const plinth = new THREE.Mesh(
+  new THREE.BoxGeometry(25.4, 0.7, 25.4),
+  new THREE.MeshStandardMaterial({color:0xd8d2c6, roughness:0.9})
+);
+plinth.position.y = -0.85;
+scene.add(plinth);
+
+const BS = S*0.94;
+const geo = new THREE.BoxGeometry(BS, BS, BS);
+const mat = new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.48, metalness:0.08});
+const blocks = new THREE.InstancedMesh(geo, mat, N);
+blocks.castShadow = true;
+blocks.receiveShadow = true;
+const C = new THREE.Color();
+for (let i = 0; i < N; i++) {
+  const v = 0.055 + rnd()*0.05;
+  C.setRGB(v, v*0.98, v*0.94);
+  blocks.setColorAt(i, C);
+}
+blocks.instanceColor.needsUpdate = true;
+scene.add(blocks);
+
+voxels.forEach(v => {
+  const a = rnd()*Math.PI*2, r = 16 + rnd()*16;
+  v.sx = Math.cos(a)*r;
+  v.sz = Math.sin(a)*r;
+  v.sy = 3 + rnd()*22;
+  v.rot = (rnd()-0.5)*5;
+  v.ph = rnd()*Math.PI*2;
+  v.sp = 0.5 + rnd()*0.7;
+  v.delay = rnd()*1.1;
+  v.k = 0;
+});
+
+let assembled = true;
+let stateT = 0;
+const DUR = 1.5;
+
+const hint = document.getElementById('hint');
+const bScatter = document.getElementById('bScatter');
+document.getElementById('bFront').addEventListener('click', () => flyTo(90, 0, 190));
+document.getElementById('bTop').addEventListener('click', () => flyTo(0.6, 0, 260));
+bScatter.addEventListener('click', () => {
+  assembled = !assembled;
+  stateT = 0;
+  voxels.forEach(v => v.delay = rnd()*1.1);
+  bScatter.textContent = assembled ? 'SCATTER' : 'BUILD';
+});
+
+const HINT_DEFAULT = "spins on its own — drag to explore · every block belongs to both images at once";
+window.__state = () => ({blocks:N, assembled, frames:window.__fr||0});
+
+const M = new THREE.Matrix4();
+const PV = new THREE.Vector3(), SV = new THREE.Vector3(1,1,1);
+const Q = new THREE.Quaternion(), E = new THREE.Euler();
+
+const clock = new THREE.Clock();
+let simT = 0;
+function step(dt){
+  simT += dt;
+  stateT += dt;
+
+  for (let i = 0; i < N; i++) {
+    const v = voxels[i];
+    const raw = Math.max(0, Math.min(1, (stateT - v.delay) / DUR));
+    const kT = assembled ? smooth(raw) : 1 - smooth(raw);
+    v.k += (kT - v.k) * Math.min(1, dt*10);
+    const k = v.k;
+    const bob = Math.sin(simT*v.sp + v.ph) * 0.05;
+    PV.set(
+      v.sx + (v.hx - v.sx)*k,
+      v.sy + (v.hy - v.sy)*k + bob,
+      v.sz + (v.hz - v.sz)*k
+    );
+    const spin = v.rot * (1-k) + Math.sin(simT*0.3 + v.ph)*0.04;
+    E.set(spin*0.6, spin, spin*0.3);
+    Q.setFromEuler(E);
+    M.compose(PV, Q, SV);
+    blocks.setMatrixAt(i, M);
+  }
+  blocks.instanceMatrix.needsUpdate = true;
+
+  if (!controls.autoRotate && resumeT > 0) {
+    resumeT -= dt;
+    if (resumeT <= 0) controls.autoRotate = true;
+  }
+
+  if (tween) {
+    tween.t += dt / 1.1;
+    const k = smooth(Math.min(1, tween.t));
+    camera.position.lerpVectors(tween.start, tween.end, k);
+    if (tween.t >= 1) tween = null;
+  }
+
+  const dir = camera.position.clone().sub(controls.target);
+  const polar = THREE.MathUtils.radToDeg(Math.acos(Math.min(1, Math.max(-1, dir.y / dir.length()))));
+  const azi = Math.abs(THREE.MathUtils.radToDeg(Math.atan2(dir.x, dir.z)));
+  if (!assembled) hint.textContent = 'the blocks float free — press BUILD to reassemble the sculpture';
+  else if (polar < 18) hint.textContent = "TOP VIEW — scan it: “Something” · The Beatles";
+  else if (polar > 72 && polar < 108 && (azi < 26 || azi > 154)) hint.textContent = "FRONT VIEW — the pixelated dog · pen.dev";
+  else hint.textContent = HINT_DEFAULT;
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+function animate(){
+  window.__fr = (window.__fr||0)+1;
+  requestAnimationFrame(animate);
+  step(Math.min(clock.getDelta(), 0.05));
+}
+animate();
+window.__step = step;
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

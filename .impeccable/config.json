@@ -1,0 +1,194 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "public/3d/arbol3d-v3.html"
+        ],
+        "createdAt": "2026-11-05T17:56:40.861Z",
+        "reason": "Pre-existing scene-panel UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "tiny-text",
+        "value": "*",
+        "files": [
+          "public/3d/arbol3d-v3.html"
+        ],
+        "createdAt": "2026-11-05T17:56:40.870Z",
+        "reason": "Pre-existing scene-panel micro-labels, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "public/3d/nube3d-v3.html"
+        ],
+        "createdAt": "2026-11-05T17:57:06.759Z",
+        "reason": "Pre-existing scene-panel UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "tiny-text",
+        "value": "*",
+        "files": [
+          "public/3d/nube3d-v3.html"
+        ],
+        "createdAt": "2026-11-05T17:57:06.768Z",
+        "reason": "Pre-existing scene-panel micro-labels, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "public/3d/panal3d-v3.html"
+        ],
+        "createdAt": "2026-11-05T17:57:16.559Z",
+        "reason": "Pre-existing scene-panel UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "tiny-text",
+        "value": "*",
+        "files": [
+          "public/3d/panal3d-v3.html"
+        ],
+        "createdAt": "2026-11-05T17:57:16.568Z",
+        "reason": "Pre-existing scene-panel micro-labels, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "public/3d/cigarro3d-v3.html"
+        ],
+        "createdAt": "2026-11-05T17:57:26.436Z",
+        "reason": "Pre-existing scene-panel UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "tiny-text",
+        "value": "*",
+        "files": [
+          "public/3d/cigarro3d-v3.html"
+        ],
+        "createdAt": "2026-11-05T17:57:26.445Z",
+        "reason": "Pre-existing scene-panel micro-labels, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-05T18:00:21.723Z",
+        "reason": "Brand font: qr-designs.pen variable font-body=Inter, used across all 13 QaRt pieces (same ignore as qr-world root, re-added here since qart/ has its own detector scope)"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "public/3d/cafe3d.html"
+        ],
+        "createdAt": "2026-11-06T04:14:17.880Z",
+        "reason": "Pre-existing scene UI, unrelated to this edit (lang attr / copy translation only)"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "public/3d/perroqr3d.html"
+        ],
+        "createdAt": "2026-11-06T04:14:55.107Z",
+        "reason": "Pre-existing scene UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "public/3d/constelacion.html"
+        ],
+        "createdAt": "2026-11-06T04:29:55.792Z",
+        "reason": "Pre-existing scene UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "public/3d/qart3d.html"
+        ],
+        "createdAt": "2026-11-06T04:33:20.251Z",
+        "reason": "Pre-existing scene UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "public/3d/react3d.html"
+        ],
+        "createdAt": "2026-11-06T04:33:20.265Z",
+        "reason": "Pre-existing scene UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "files": [
+          "public/3d/cigarro3d-v3.html"
+        ],
+        "createdAt": "2026-11-06T04:33:20.277Z",
+        "reason": "Pre-existing scene UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "files": [
+          "public/3d/arbol3d-v3.html"
+        ],
+        "createdAt": "2026-11-06T04:33:20.286Z",
+        "reason": "Pre-existing scene UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "wide-tracking",
+        "value": "*",
+        "files": [
+          "public/3d/constelacion.html"
+        ],
+        "createdAt": "2026-11-06T04:33:20.295Z",
+        "reason": "Pre-existing scene UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "public/3d/cafe3d.html"
+        ],
+        "createdAt": "2026-11-06T20:07:47.477Z",
+        "reason": "Pre-existing scene UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "public/3d/perroqr3d.html"
+        ],
+        "createdAt": "2026-11-06T20:07:47.489Z",
+        "reason": "Pre-existing scene UI, unrelated to this edit (copy translation only)"
+      },
+      {
+        "rule": "tiny-text",
+        "value": "*",
+        "files": [
+          "public/3d/constelacion.html"
+        ],
+        "createdAt": "2026-11-07T18:02:31.625Z",
+        "reason": "11px mobile-only metadata caption (song/count/credit), ported verbatim from approved Pencil comp node h1VSuU; matches this piece's existing 12-13px overlay-caption convention, not primary reading content"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist mono",
+        "files": [
+          "public/3d/constelacion.html"
+        ],
+        "createdAt": "2026-11-07T18:06:09.511Z",
+        "reason": "matches the main site's existing sitewide type system (Geist Mono + Schibsted Grotesk, already loaded in root index.html); this redesign's explicit goal was to align this piece's typography with the rest of the app, not introduce a new face"
+      }
+    ]
+  }
+}

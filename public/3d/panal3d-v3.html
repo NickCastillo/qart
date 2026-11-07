@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Honeycomb · Living Scene Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0D0D0B;--surface:#15150F;--text:#F2EFE6;--dim:#97938A;--accent:#E4C469;--line:#2A2922;--active:#201F16}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:Inter,ui-sans-serif,sans-serif;color:var(--text)}
+  #vp{position:fixed;inset:0 320px 0 0}
+  canvas{display:block}
+  #overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:22px 26px;box-sizing:border-box}
+  #topRow{display:flex;justify-content:space-between;align-items:center}
+  #sceneLabel{font-size:11px;letter-spacing:.22em;color:var(--dim)}
+  #scanChip{display:flex;gap:8px;align-items:center;padding:7px 14px;border:1px solid var(--line);border-radius:99px;background:var(--surface);font-size:12px;color:var(--dim)}
+  #scanDot{width:6px;height:6px;border-radius:99px;background:#F2B53A}
+  #hint{font-size:12px;color:var(--dim);text-align:center;letter-spacing:.04em;transition:color .4s}
+  #panel{position:fixed;top:0;right:0;bottom:0;width:320px;box-sizing:border-box;background:var(--surface);border-left:1px solid var(--line);padding:24px;display:flex;flex-direction:column;gap:22px;overflow-y:auto}
+  .sec{font-size:11px;font-weight:500;letter-spacing:.23em;color:var(--dim)}
+  .col{display:flex;flex-direction:column;gap:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .scene{display:flex;flex-direction:column;gap:8px;align-items:center;padding:14px 0;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--dim);font-size:12px;cursor:default}
+  .scene svg{width:22px;height:22px;stroke:var(--dim)}
+  .scene.active{border:1.5px solid var(--accent);background:var(--active);color:var(--text);font-weight:600}
+  .scene.active svg{stroke:var(--accent)}
+  .scene.link{cursor:pointer}
+  .scene.link:hover{border-color:var(--accent)}
+  .segmented{display:flex;gap:3px;padding:3px;border:1px solid var(--line);border-radius:11px;background:var(--bg)}
+  .seg{flex:1;padding:9px 0;border:0;border-radius:8px;background:transparent;color:var(--dim);font-family:Inter;font-size:12px;font-weight:500;cursor:pointer}
+  .seg.active{background:var(--accent);color:#15150F;font-weight:600}
+  .floorOpts{display:flex;gap:8px}
+  .fop{flex:1;display:flex;flex-direction:column;gap:7px;align-items:center;padding:11px 0;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--dim);font-family:Inter;font-size:11px;cursor:pointer}
+  .fop i{width:18px;height:18px;border-radius:99px;display:block}
+  .fop.active{border:1.5px solid var(--accent);background:var(--active);color:var(--text);font-weight:600}
+  .note{font-size:11px;line-height:1.5;color:var(--dim);opacity:.75}
+  .swatches{display:flex;gap:10px}
+  .psw{width:30px;height:30px;border-radius:99px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent}
+  .psw.active{border:1.5px solid var(--text)}
+  .psw i{width:20px;height:20px;border-radius:99px;display:block}
+  .chips{display:flex;gap:8px}
+  .chip{flex:1;padding:7px 0;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--dim);font-family:Inter;font-size:12px;font-weight:600;cursor:pointer}
+  .chip.on{border-color:var(--accent);background:var(--active);color:var(--accent)}
+  .srow{display:flex;justify-content:space-between;font-size:12px}
+  .srow b{font-weight:400;color:var(--text)}
+  .srow span{color:var(--dim)}
+  input[type=range]{-webkit-appearance:none;width:100%;height:14px;background:transparent}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(90deg,var(--accent) var(--fill,30%),var(--line) var(--fill,30%))}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;margin-top:-5.5px;width:14px;height:14px;border-radius:99px;background:var(--text);border:0}
+  #shuffle{margin-top:auto;padding:11px 0;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);font-family:Inter;font-size:13px;font-weight:500;cursor:pointer}
+  #shuffle:hover{border-color:var(--accent)}
+  #credit{display:flex;gap:8px;align-items:center;font-size:11px;color:var(--dim)}
+  #credit svg{width:13px;height:13px;stroke:#7FA35A;flex:none}
+  html.embed #panel,html.embed #overlay{display:none}
+  html.embed #vp{inset:0}
+</style>
+<script>if(new URLSearchParams(location.search).has('embed'))document.documentElement.classList.add('embed')</script>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="vp">
+  <div id="overlay">
+    <div id="topRow">
+      <div id="sceneLabel">BEEHIVE</div>
+      <div id="scanChip"><span id="scanDot"></span><span>100% scannable from above</span></div>
+    </div>
+    <div id="hint">the dried honey is already part of the code — double-click shakes the hive · Show QR releases the swarm</div>
+  </div>
+</div>
+<div id="panel">
+  <div class="col">
+    <div class="sec">SCENE</div>
+    <div class="grid2">
+      <div class="scene link" onclick="location.href='./nube3d-v3.html'"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>Cloud</div>
+      <div class="scene link" onclick="location.href='./arbol3d-v3.html'"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M8 19a4 4 0 0 1-2.24-7.32A3.5 3.5 0 0 1 9 6.03V6a3 3 0 1 1 6 0v.04a3.5 3.5 0 0 1 3.24 5.65A4 4 0 0 1 16 19Z"/><path d="M12 19v3"/></svg>Tree</div>
+      <div class="scene active"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Hive</div>
+      <div class="scene link" onclick="location.href='./cigarro3d-v3.html'"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 12H2v4h16"/><path d="M22 12v4"/><path d="M7 12v4"/></svg>Cigar</div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="sec">VIEW</div>
+    <div class="segmented">
+      <button class="seg active" data-mode="scene">Show scene</button>
+      <button class="seg" data-mode="qr">Show QR</button>
+      <button class="seg" data-mode="cloud">Show cloud</button>
+    </div>
+    <div class="note">Show QR shakes the hive — the swarm pours out and each bee lands on a dark square</div>
+  </div>
+  <div class="col">
+    <div class="sec">FLOOR</div>
+    <div class="floorOpts">
+      <button class="fop active" data-floor="wood"><i style="background:#D9BC94"></i>Wood</button>
+      <button class="fop" data-floor="cement"><i style="background:#CFCFCA"></i>Cement</button>
+      <button class="fop" data-floor="grass"><i style="background:#BCCF9C"></i>Grass</button>
+    </div>
+    <div class="note">dried honey drips are permanent modules — even the corners finish only when the bees settle</div>
+  </div>
+  <div class="col">
+    <div class="sec">HONEY</div>
+    <div class="swatches" id="swatches"></div>
+  </div>
+  <div class="col">
+    <div class="sec">ROTATION</div>
+    <div class="chips">
+      <button class="chip" data-ax="x">X</button>
+      <button class="chip on" data-ax="y">Y</button>
+      <button class="chip" data-ax="z">Z</button>
+    </div>
+    <div class="srow"><b>Speed</b><span id="spdV">0.6×</span></div>
+    <input type="range" id="spd" min="0" max="2" step="0.1" value="0.6" style="--fill:30%">
+  </div>
+  <button id="shuffle">Shuffle honey</button>
+  <div id="credit">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>
+    <span>Concept — Abdou Yaackoubi · the Sakura QR tree</span>
+  </div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const QR = [
+"QQQQQQQ...Q.Q..QQ.QQQQQQQ",
+"Q.....Q.Q...QQQ.Q.Q.....Q",
+"Q.QQQ.Q.QQQ..Q.Q..Q.QQQ.Q",
+"Q.QQQ.Q.Q.Q.....Q.Q.QQQ.Q",
+"Q.QQQ.Q...Q.Q..QQ.Q.QQQ.Q",
+"Q.....Q..QQ.Q..Q..Q.....Q",
+"QQQQQQQ.Q.Q.Q.Q.Q.QQQQQQQ",
+"........Q.....QQQ........",
+"Q.....Q.Q..Q.....QQ..QQQ.",
+".....Q.Q..QQQQ..Q..QQQQQ.",
+".Q..QQQ..QQQQQQQ.QQ..Q.QQ",
+"..QQ.Q.QQQ.Q.Q.QQQQ..Q..Q",
+"Q.Q.QQQ.QQ.QQQ.Q..Q.....Q",
+"QQQQQ..QQ.Q....QQ..Q...Q.",
+"Q.....Q.Q..QQ..QQQ.QQQ.QQ",
+"Q.QQ....QQ.Q.......Q.QQ.Q",
+"Q.Q.QQQ.Q..Q...QQQQQQ.Q..",
+"........Q...QQQ.Q...Q....",
+"QQQQQQQ...QQ....Q.Q.Q...Q",
+"Q.....Q..Q..QQ.QQ...Q..Q.",
+"Q.QQQ.Q..QQ.Q.QQQQQQQ.QQ.",
+"Q.QQQ.Q..Q....Q.Q.Q.....Q",
+"Q.QQQ.Q..Q.QQ........QQ.Q",
+"Q.....Q...QQ..Q.QQ.QQ...Q",
+"QQQQQQQ.QQQ..QQ.QQ...Q..Q"];
+
+const N = 25, MSZ = 0.5;
+const cx = (c) => (c - 12) * MSZ, cz = (r) => (r - 12) * MSZ;
+const inFinder = (c, r) => (c < 8 && r < 8) || (c > 16 && r < 8) || (c < 8 && r > 16);
+
+let seed = 31;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const smooth = p => p*p*(3-2*p);
+
+const vp = document.getElementById('vp');
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xFFFFFF);
+
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160);
+let vpW = 0, vpH = 0;
+function sizeViewport(){
+  const w = vp.clientWidth || 880, h = vp.clientHeight || 760;
+  if (w === vpW && h === vpH) return;
+  vpW = w; vpH = h;
+  renderer.setSize(w, h);
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+}
+vp.prepend(renderer.domElement);
+sizeViewport();
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 3.8, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.minDistance = 7;
+controls.maxDistance = 56;
+if (document.documentElement.classList.contains('embed')) {
+  controls.enabled = false;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 1.2;
+}
+
+const place = (polarDeg, aziDeg, dist) => {
+  const p = THREE.MathUtils.degToRad(polarDeg), a = THREE.MathUtils.degToRad(aziDeg);
+  const t = controls.target;
+  return new THREE.Vector3(
+    t.x + dist*Math.sin(p)*Math.sin(a),
+    t.y + dist*Math.cos(p),
+    t.z + dist*Math.sin(p)*Math.cos(a));
+};
+camera.position.copy(place(64, 32, 28));
+camera.lookAt(controls.target);
+let tween = null;
+const flyTo = (p, a, d) => { tween = {s:camera.position.clone(), e:place(p, a, d), t:0}; };
+window.setView = (p, a, d = 28) => { camera.position.copy(place(p, a, d)); camera.lookAt(controls.target); };
+
+scene.add(new THREE.HemisphereLight(0xfffaf0, 0x8a8578, 1.3));
+const sun = new THREE.DirectionalLight(0xfff1d6, 1.2);
+sun.position.set(-5.1, 16, -3.2);
+scene.add(sun);
+
+const world = new THREE.Group();
+scene.add(world);
+
+const M = new THREE.Matrix4(), C = new THREE.Color(), C2 = new THREE.Color();
+const V = new THREE.Vector3(), SC = new THREE.Vector3(1,1,1);
+const Qt = new THREE.Quaternion(), E = new THREE.Euler();
+
+const voxels = [];
+function reg(mesh, i, x, y, z){
+  const a = rnd()*Math.PI*2, rr = 7 + rnd()*7;
+  const v = {mesh, i, hx:x, hy:y, hz:z, ex:0, ey:0, ez:0,
+    sx:Math.cos(a)*rr, sy:2.5+rnd()*8, sz:Math.sin(a)*rr,
+    rot:(rnd()-0.5)*5, ph:rnd()*6.28, sp:0.5+rnd()*0.7, delay:rnd()*0.9, k:1};
+  voxels.push(v);
+  return v;
+}
+
+// ---- classification: permanent dried honey vs fresh bees ----
+const dripCells = [], beeTargets = [];
+for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+  if (QR[r][c] !== 'Q') continue;
+  const keep = inFinder(c, r) ? rnd() < 0.62 : rnd() < 0.22;
+  if (keep) dripCells.push([c, r]);
+  else beeTargets.push([c, r]);
+}
+
+// ---- floor: thick light slab ----
+const SOIL = 16;
+const FLOORS = {wood:0xD9BC94, cement:0xCFCFCA, grass:0xBCCF9C};
+const soilMat = new THREE.MeshLambertMaterial({color:FLOORS.wood, transparent:true, opacity:1});
+const soil = new THREE.Mesh(new THREE.BoxGeometry(SOIL, 0.85, SOIL), soilMat);
+soil.position.y = -0.425;
+world.add(soil);
+const lipMat = new THREE.MeshLambertMaterial({color:0xBCA178, transparent:true, opacity:1});
+const lip = new THREE.Mesh(new THREE.BoxGeometry(SOIL+0.7, 0.32, SOIL+0.7), lipMat);
+lip.position.y = -1.0;
+world.add(lip);
+
+// ---- dried honey drips: permanent, varied sizes ----
+const dripTones = [0xBB8C4B, 0xAF7F42, 0xC1965C, 0xA3773E];
+const dripGeo = new THREE.BoxGeometry(MSZ*0.94, 1, MSZ*0.94);
+dripGeo.translate(0, 0.5, 0);
+const drips = new THREE.InstancedMesh(dripGeo, new THREE.MeshLambertMaterial({color:0xffffff}), dripCells.length);
+dripCells.forEach(([c, r], i) => {
+  const v = reg(drips, i, cx(c), 0.005, cz(r));
+  v.scaleY = 0.03 + rnd()*rnd()*0.14;
+  v.scaleXZ = 0.82 + rnd()*0.22;
+  C.set(dripTones[(rnd()*dripTones.length)|0]).multiplyScalar(0.85 + rnd()*0.3);
+  drips.setColorAt(i, C);
+});
+drips.instanceColor.needsUpdate = true;
+world.add(drips);
+
+// ---- branch ----
+const CSW = 0.34;
+const woodCells = [];
+const wset = new Set();
+const addWood = (x, y, z) => {
+  const gx = Math.round(x/CSW), gy = Math.round(y/CSW), gz = Math.round(z/CSW);
+  const key = gx + ':' + gy + ':' + gz;
+  if (wset.has(key)) return;
+  wset.add(key);
+  woodCells.push([gx*CSW, gy*CSW, gz*CSW]);
+};
+for (let i = 0; i <= 30; i++) {
+  const t = i/30;
+  addWood(0.2 + 6.4*t, 9.8 + 2.4*t*t, -1.3*t);
+  addWood(0.2 + 6.4*t, 9.8 + 2.4*t*t - CSW, -1.3*t);
+}
+addWood(0, 9.8, 0); addWood(0, 9.46, 0);
+const wood = new THREE.InstancedMesh(new THREE.BoxGeometry(CSW, CSW, CSW), new THREE.MeshLambertMaterial({color:0xffffff}), woodCells.length);
+woodCells.forEach(([x, y, z], i) => {
+  reg(wood, i, x, y, z).isHive = true;
+  const v = 0.85 + (rnd()-0.5)*0.2;
+  C.setRGB(0.33*v, 0.23*v, 0.13*v);
+  wood.setColorAt(i, C);
+});
+wood.instanceColor.needsUpdate = true;
+world.add(wood);
+
+// ---- hanging honeycomb: voxels aligned with honey tones ----
+const HONEYS = {
+  golden: [0xF2B53A, 0xE8A62E, 0xD9952A, 0xF6C64A, 0xC9861F],
+  amber:  [0xD98E2B, 0xC97D22, 0xB86E1C, 0xE49F38, 0xA86018],
+  light:  [0xF6D27C, 0xEFC468, 0xE8B957, 0xFBDE92, 0xDEAC4E],
+  dark:   [0xA8741F, 0x966518, 0x855813, 0xB8822A, 0x744B0F],
+  wax:    [0xE8D9A8, 0xDECC94, 0xD4BF82, 0xF2E4BC, 0xC9B370],
+  orange: [0xE8912E, 0xD97F24, 0xF2A444, 0xC96F1C, 0xB86014]
+};
+let honey = HONEYS.golden;
+const CS = 0.3;
+const PIVY = 9.5;
+const hiveCells = [];
+const hiveEntr = [];
+for (let x = -2.85; x <= 2.85; x += CS)
+for (let y = 5.1; y <= 9.5; y += CS)
+for (let z = -2.85; z <= 2.85; z += CS) {
+  const ringBulge = 1 + 0.08*Math.sin((y-5.0)*4.2);
+  const a = 2.5*ringBulge, b = 2.3;
+  const dy = (y-7.3)/b;
+  if ((x*x + z*z)/(a*a) + dy*dy > 1) continue;
+  hiveCells.push([x, y, z]);
+  hiveEntr.push(Math.abs(x) < 0.5 && Math.abs(y-6.0) < 0.5 && z > 1.2);
+}
+const hiveGeo = new THREE.BoxGeometry(CS, CS, CS);
+const hiveMat = new THREE.MeshLambertMaterial({color:0xffffff, transparent:true, opacity:1});
+const hive = new THREE.InstancedMesh(hiveGeo, hiveMat, hiveCells.length);
+function paintHive(){
+  let s2 = 71;
+  const r2 = () => (s2 = (s2*16807) % 2147483647) / 2147483647;
+  hiveCells.forEach(([x, y, z], i) => {
+    if (hiveEntr[i]) { C.setRGB(0.1, 0.06, 0.02); }
+    else {
+      const band = 0.82 + 0.18*Math.sin((y-5.0)*4.2);
+      C.set(honey[(r2()*honey.length)|0]).multiplyScalar(band*(0.9 + r2()*0.2));
+    }
+    hive.setColorAt(i, C);
+  });
+  hive.instanceColor.needsUpdate = true;
+}
+hiveCells.forEach(([x, y, z], i) => {
+  reg(hive, i, x, y, z).isHive = true;
+});
+paintHive();
+world.add(hive);
+
+const ENTR = new THREE.Vector3(0, 6.0, 2.3);
+const glow = new THREE.PointLight(0xffb545, 2.5, 4.5);
+glow.position.copy(ENTR);
+world.add(glow);
+
+// ---- pixelated shadow of the hive and the branch ----
+const SUN_DIR = [0.32, 0.2];
+const shCells = new Set();
+const projectCell = (x, y, z) => {
+  const gx = Math.round((x + y*SUN_DIR[0]) / MSZ), gz = Math.round((z + y*SUN_DIR[1]) / MSZ);
+  if (Math.abs(gx*MSZ) < SOIL/2 - 0.4 && Math.abs(gz*MSZ) < SOIL/2 - 0.4) shCells.add(gx + ':' + gz);
+};
+hiveCells.forEach(([x, y, z]) => projectCell(x, y, z));
+woodCells.forEach(([x, y, z]) => projectCell(x, y, z));
+const shadowMat = new THREE.MeshBasicMaterial({color:0x26221C, transparent:true, opacity:0.18, depthWrite:false});
+const shKeys = [...shCells];
+const hiveShadow = new THREE.InstancedMesh(new THREE.BoxGeometry(MSZ*0.96, 0.02, MSZ*0.96), shadowMat, shKeys.length);
+shKeys.forEach((key, i) => {
+  const [gx, gz] = key.split(':').map(Number);
+  M.makeTranslation(gx*MSZ, 0.03, gz*MSZ);
+  hiveShadow.setMatrixAt(i, M);
+});
+hiveShadow.renderOrder = 5;
+world.add(hiveShadow);
+
+// ---- swarm: leaves the entrance and lands on the modules ----
+const N_BEE = Math.round(beeTargets.length * 1.3);
+const beeOrder = [...Array(N_BEE).keys()];
+for (let i = beeOrder.length-1; i > 0; i--) { const j = (rnd()*(i+1))|0; [beeOrder[i],beeOrder[j]] = [beeOrder[j],beeOrder[i]]; }
+const beeStack = new Array(beeTargets.length).fill(0);
+const beeGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+const beeMesh = new THREE.InstancedMesh(beeGeo, new THREE.MeshLambertMaterial({color:0xffffff}), N_BEE);
+const beeGold = [0xF2B53A, 0xE8A62E, 0xD9952A, 0x3A2A10];
+const beeDark = new THREE.Color(0xB98346);
+const bees = [];
+const beeVivid = [];
+for (let i = 0; i < N_BEE; i++) {
+  const ti = i < beeTargets.length ? i : (rnd()*beeTargets.length)|0;
+  const [tc, tr] = beeTargets[ti];
+  const n = Math.min(beeStack[ti]++, 2);
+  const txv = cx(tc), tzv = cz(tr);
+  bees.push({
+    sx:ENTR.x + (rnd()-0.5)*0.4, sy:ENTR.y + (rnd()-0.5)*0.4, sz:ENTR.z + rnd()*0.4,
+    tx:txv, ty:0.1 + n*0.09, tz:tzv,
+    bx:txv*0.5 + (rnd()-0.5)*5, by:2.6 + rnd()*2.6, bz:tzv*0.5 + (rnd()-0.5)*5,
+    q:0, fade:1, qDelay:beeOrder[i]*0.006 + rnd()*0.3, dur:1.0 + rnd()*0.8,
+    ph:rnd()*6.28
+  });
+  const v = reg(beeMesh, i, bees[i].sx, bees[i].sy, bees[i].sz);
+  v.isBee = bees[i];
+  const col = new THREE.Color(beeGold[(rnd()*beeGold.length)|0]);
+  beeVivid.push(col);
+  beeMesh.setColorAt(i, col);
+}
+beeMesh.instanceColor.needsUpdate = true;
+world.add(beeMesh);
+
+// ---- ambient bees orbiting ----
+const NORB = 12;
+const orbMesh = new THREE.InstancedMesh(beeGeo, new THREE.MeshLambertMaterial({color:0xffffff, transparent:true, opacity:1}), NORB);
+const orbs = [];
+for (let i = 0; i < NORB; i++) {
+  orbs.push({r:3.4+rnd()*1.3, w:(0.7+rnd()*0.8)*(rnd()<0.5?-1:1), a0:rnd()*6.28, yb:5.8+rnd()*2.6, ph:rnd()*6.28});
+  C.set(beeGold[(rnd()*beeGold.length)|0]);
+  orbMesh.setColorAt(i, C);
+}
+orbMesh.instanceColor.needsUpdate = true;
+world.add(orbMesh);
+
+const total = voxels.length;
+document.getElementById('sceneLabel').textContent =
+  total + ' VOXELS · ' + dripCells.length + ' DRIED HONEY DRIPS · ' + beeTargets.length + ' MODULES WAIT FOR BEES';
+
+let mode = 'scene';
+let stateT = 10;
+let shakeT = 10;
+let topFlown = true;
+const hint = document.getElementById('hint');
+const HINTS = {
+  scene: 'the dried honey is already part of the code — double-click shakes the hive · Show QR releases the swarm',
+  qrDrop: 'the hive shakes — each bee flies off to land on a dark module…',
+  qrTop: 'TOP VIEW — dried honey + landed bees draw the QR · scan it',
+  cloud: 'the scene dissolves — every block drifts free · pick a view to rebuild it'
+};
+function setMode(m){
+  mode = m;
+  stateT = 0;
+  voxels.forEach(v => v.delay = rnd()*0.9);
+  document.querySelectorAll('.seg').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  if (m === 'scene') { flyTo(64, 32, 28); topFlown = true; hint.textContent = HINTS.scene; }
+  if (m === 'cloud') { flyTo(64, 20, 32); topFlown = true; hint.textContent = HINTS.cloud; }
+  if (m === 'qr') {
+    const TAU = Math.PI*2;
+    const norm = a => { a %= TAU; if (a > Math.PI) a -= TAU; if (a < -Math.PI) a += TAU; return a; };
+    world.rotation.set(norm(world.rotation.x), norm(world.rotation.y), norm(world.rotation.z));
+    topFlown = false;
+    shakeT = 0;
+    bees.forEach(l => { l.q = 0; l.fade = 1; });
+    hint.textContent = HINTS.qrDrop;
+  }
+}
+document.querySelectorAll('.seg').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+renderer.domElement.addEventListener('dblclick', () => { if (mode === 'scene') shakeT = 0; });
+
+const axes = {x:false, y:true, z:false};
+document.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => {
+  axes[ch.dataset.ax] = !axes[ch.dataset.ax];
+  ch.classList.toggle('on', axes[ch.dataset.ax]);
+}));
+let speed = 0.6;
+const spd = document.getElementById('spd');
+spd.addEventListener('input', () => {
+  speed = parseFloat(spd.value);
+  document.getElementById('spdV').textContent = speed.toFixed(1) + '×';
+  spd.style.setProperty('--fill', (speed/2*100) + '%');
+});
+
+document.querySelectorAll('.fop').forEach(b => b.addEventListener('click', () => {
+  soilMat.color.set(FLOORS[b.dataset.floor]);
+  lipMat.color.set(FLOORS[b.dataset.floor]).multiplyScalar(0.84);
+  document.querySelectorAll('.fop').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+}));
+
+const swBox = document.getElementById('swatches');
+Object.entries(HONEYS).forEach(([name, cols], idx) => {
+  const b = document.createElement('button');
+  b.className = 'psw' + (idx === 0 ? ' active' : '');
+  b.innerHTML = '<i style="background:#' + cols[0].toString(16).padStart(6, '0') + '"></i>';
+  b.title = name;
+  b.addEventListener('click', () => {
+    honey = cols;
+    paintHive();
+    document.querySelectorAll('.psw').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+  });
+  swBox.appendChild(b);
+});
+document.getElementById('shuffle').addEventListener('click', () => {
+  seed = ((Math.random()*2147483646)|0) + 1;
+  hiveCells.forEach(([x, y, z], i) => {
+    if (hiveEntr[i]) return;
+    const band = 0.82 + 0.18*Math.sin((y-5.0)*4.2);
+    C.set(honey[(rnd()*honey.length)|0]).multiplyScalar(band*(0.88 + rnd()*0.24));
+    hive.setColorAt(i, C);
+  });
+  hive.instanceColor.needsUpdate = true;
+});
+
+window.__state = () => ({mode, total, bees:N_BEE, targets:beeTargets.length, frames:window.__fr||0,
+  qAvg:+(bees.reduce((a, l) => a+l.q, 0)/N_BEE).toFixed(3), topFlown});
+
+let beeColorsDirty = true;
+const clock = new THREE.Clock();
+let simT = 0;
+function step(dt){
+  simT += dt; stateT += dt;
+  const kTarget = mode === 'cloud' ? 0 : 1;
+
+  shakeT += dt;
+  const shake = shakeT < 1.6 ? Math.sin(shakeT*30)*0.08*Math.exp(-shakeT*2.4) : 0;
+  const sway = Math.sin(simT*0.55)*0.022 + shake;
+  const cosS = Math.cos(sway), sinS = Math.sin(sway);
+
+  let qSum = 0;
+  for (let i = 0; i < total; i++) {
+    const v = voxels[i];
+    if (stateT > v.delay) v.k += (kTarget - v.k) * Math.min(1, dt*2.6);
+    const k = smooth(Math.max(0, Math.min(1, v.k)));
+    let hx = v.hx, hy = v.hy, hz = v.hz;
+
+    if (v.isHive) {
+      const dx = hx, dy = hy - PIVY;
+      hx = dx*cosS - dy*sinS;
+      hy = PIVY + dx*sinS + dy*cosS;
+      const spin0 = v.rot*(1-k);
+      E.set(spin0*0.6, spin0, sway + spin0*0.3);
+      Qt.setFromEuler(E);
+      const bobA = (1-k);
+      V.set(
+        v.sx + (hx - v.sx)*k + Math.sin(simT*v.sp + v.ph)*0.18*bobA,
+        v.sy + (hy - v.sy)*k + Math.cos(simT*v.sp*0.8 + v.ph)*0.22*bobA,
+        v.sz + (hz - v.sz)*k
+      );
+      M.compose(V, Qt, SC.set(1, 1, 1));
+      v.mesh.setMatrixAt(v.i, M);
+      continue;
+    }
+
+    if (v.isBee) {
+      const l = v.isBee;
+      if (mode === 'qr') {
+        if (stateT > l.qDelay) l.q += (1 - l.q) * Math.min(1, dt/l.dur*2.2);
+      } else if (l.q > 0.001) {
+        l.fade = Math.max(0, l.fade - dt*1.5);
+        if (l.fade === 0) l.q = 0;
+      }
+      const q = smooth(Math.max(0, Math.min(1, l.q)));
+      qSum += l.q;
+      const u = 1 - q;
+      hx = u*u*l.sx + 2*u*q*l.bx + q*q*l.tx + Math.sin(q*16 + l.ph)*0.3*u*q;
+      hy = u*u*l.sy + 2*u*q*l.by + q*q*l.ty + Math.abs(Math.sin(q*22 + l.ph))*0.25*u*q;
+      hz = u*u*l.sz + 2*u*q*l.bz + q*q*l.tz + Math.cos(q*14 + l.ph)*0.3*u*q;
+      const settle = smooth(Math.max(0, (l.q - 0.8)/0.2));
+      let scl = Math.min(1, l.q*9) * (mode === 'qr' ? 1 : l.fade);
+      if (l.q < 0.001) scl = 0;
+      SC.set(scl*(1 + settle*0.5), scl*(1 - settle*0.45), scl*(1 + settle*0.5));
+      if (l.cPainted === undefined || Math.abs(settle - (l.cPainted||0)) > 0.04) {
+        C2.copy(beeVivid[v.i]).lerp(beeDark, settle);
+        beeMesh.setColorAt(v.i, C2);
+        l.cPainted = settle;
+        beeColorsDirty = true;
+      }
+      const bobA = (1-k);
+      V.set(
+        v.sx + (hx - v.sx)*k + Math.sin(simT*v.sp + v.ph)*0.18*bobA,
+        v.sy + (hy - v.sy)*k + Math.cos(simT*v.sp*0.8 + v.ph)*0.22*bobA,
+        v.sz + (hz - v.sz)*k
+      );
+      Qt.identity();
+      M.compose(V, Qt, SC);
+      v.mesh.setMatrixAt(v.i, M);
+      continue;
+    }
+
+    const bobAmt = (1-k);
+    V.set(
+      v.sx + (hx - v.sx)*k + Math.sin(simT*v.sp + v.ph)*0.18*bobAmt,
+      v.sy + (hy - v.sy)*k + Math.cos(simT*v.sp*0.8 + v.ph)*0.22*bobAmt,
+      v.sz + (hz - v.sz)*k
+    );
+    const spin = v.rot*(1-k);
+    E.set(spin*0.6, spin, spin*0.3);
+    Qt.setFromEuler(E);
+    if (v.scaleY !== undefined) SC.set(v.scaleXZ || 1, v.scaleY + (1-k)*0.2, v.scaleXZ || 1);
+    else SC.set(1, 1, 1);
+    M.compose(V, Qt, SC);
+    v.mesh.setMatrixAt(v.i, M);
+  }
+  drips.instanceMatrix.needsUpdate = true;
+  wood.instanceMatrix.needsUpdate = true;
+  hive.instanceMatrix.needsUpdate = true;
+  beeMesh.instanceMatrix.needsUpdate = true;
+  if (beeColorsDirty) { beeMesh.instanceColor.needsUpdate = true; beeColorsDirty = false; }
+
+  glow.intensity = mode === 'scene' ? 3 + Math.sin(simT*3.1)*1.2 : 0;
+
+  // the hive and the branch fade out in the overhead view
+  const hiveFade = (mode === 'qr' && topFlown) ? 0 : 1;
+  hiveMat.opacity += (hiveFade - hiveMat.opacity)*Math.min(1, dt*3);
+  wood.material.opacity = hiveMat.opacity;
+  hive.visible = wood.visible = hiveMat.opacity > 0.02;
+
+  const shTarget = mode === 'cloud' ? 0 : (1 - qSum/N_BEE) * 0.18 * hiveMat.opacity;
+  shadowMat.opacity += (shTarget - shadowMat.opacity)*Math.min(1, dt*3);
+  hiveShadow.visible = shadowMat.opacity > 0.012;
+
+  // ambient bees
+  const orbTarget = mode === 'scene' ? 1 : 0;
+  orbMesh.material.opacity += (orbTarget - orbMesh.material.opacity)*Math.min(1, dt*3);
+  orbMesh.visible = orbMesh.material.opacity > 0.02;
+  if (orbMesh.visible) {
+    orbs.forEach((o, i) => {
+      const a = o.a0 + simT*o.w;
+      V.set(Math.cos(a)*o.r, o.yb + Math.sin(simT*2.2 + o.ph)*0.3, Math.sin(a)*o.r);
+      Qt.setFromEuler(E.set(0, -a, 0));
+      M.compose(V, Qt, SC.set(1, 1, 1));
+      orbMesh.setMatrixAt(i, M);
+    });
+    orbMesh.instanceMatrix.needsUpdate = true;
+  }
+
+  if (mode === 'qr' && !topFlown && qSum/N_BEE > 0.82) {
+    topFlown = true;
+    flyTo(0.5, 0, 26);
+    hint.textContent = HINTS.qrTop;
+  }
+
+  const soilTarget = mode !== 'cloud' ? 1 : 0;
+  soilMat.opacity += (soilTarget - soilMat.opacity)*Math.min(1, dt*3);
+  lipMat.opacity = soilMat.opacity;
+  soil.visible = lip.visible = soilMat.opacity > 0.02;
+
+  if (mode === 'qr') {
+    world.rotation.x += (0 - world.rotation.x)*Math.min(1, dt*3);
+    world.rotation.y += (0 - world.rotation.y)*Math.min(1, dt*3);
+    world.rotation.z += (0 - world.rotation.z)*Math.min(1, dt*3);
+  } else {
+    if (axes.x) world.rotation.x += dt*speed*0.18;
+    if (axes.y) world.rotation.y += dt*speed*0.3;
+    if (axes.z) world.rotation.z += dt*speed*0.18;
+  }
+
+  if (tween) {
+    tween.t += dt/1.2;
+    const k = smooth(Math.min(1, tween.t));
+    camera.position.lerpVectors(tween.s, tween.e, k);
+    if (tween.t >= 1) tween = null;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+function animate(){
+  window.__fr = (window.__fr||0)+1;
+  requestAnimationFrame(animate);
+  if ((window.__fr & 31) === 0) sizeViewport();
+  step(Math.min(clock.getDelta(), 0.05));
+}
+animate();
+window.__step = step;
+
+addEventListener('resize', sizeViewport);
+</script>
+</body>
+</html>

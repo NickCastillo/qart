@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cigar 3D</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(1200px 800px at 50% 26%,#2b2b33,#111114);font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Inter,sans-serif;color:#e8e8ee}
+  canvas{display:block}
+  #ui{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:22px 26px;box-sizing:border-box}
+  header h1{font-size:14px;letter-spacing:.22em;margin:0;font-weight:700}
+  header p{margin:5px 0 0;font-size:12px;color:#8e8e9a;letter-spacing:.04em}
+  #foot{display:flex;flex-direction:column;align-items:center;gap:12px}
+  #hint{font-size:12px;color:#8e8e9a;letter-spacing:.04em;transition:color .4s}
+  #btn{pointer-events:auto;border:0;border-radius:12px;padding:14px 30px;font-size:13px;font-weight:700;letter-spacing:.14em;color:#2a0e02;background:linear-gradient(180deg,#ff9448,#e8571e);cursor:pointer;box-shadow:0 8px 22px rgba(232,87,30,.32),inset 0 1px 0 rgba(255,255,255,.4);transition:transform .08s,filter .2s}
+  #btn:hover{filter:brightness(1.06)}
+  #btn:active{transform:translateY(2px)}
+  #btn:disabled{filter:saturate(.4) brightness(.8);cursor:default}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="ui">
+  <header>
+    <h1>CIGAR · 3D</h1>
+    <p>drag to rotate &nbsp;·&nbsp; scroll to zoom in &nbsp;·&nbsp; look at it from above</p>
+  </header>
+  <div id="foot">
+    <div id="hint">the smoke rises in pixels — the ash draws the QR code</div>
+    <button id="btn">TAP ASH</button>
+  </div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const QR = [
+"QQQQQQQ...Q.Q..QQ.QQQQQQQ",
+"Q.....Q.Q...QQQ.Q.Q.....Q",
+"Q.QQQ.Q.QQQ..Q.Q..Q.QQQ.Q",
+"Q.QQQ.Q.Q.Q.....Q.Q.QQQ.Q",
+"Q.QQQ.Q...Q.Q..QQ.Q.QQQ.Q",
+"Q.....Q..QQ.Q..Q..Q.....Q",
+"QQQQQQQ.Q.Q.Q.Q.Q.QQQQQQQ",
+"........Q.....QQQ........",
+"Q.....Q.Q..Q.....QQ..QQQ.",
+".....Q.Q..QQQQ..Q..QQQQQ.",
+".Q..QQQ..QQQQQQQ.QQ..Q.QQ",
+"..QQ.Q.QQQ.Q.Q.QQQQ..Q..Q",
+"Q.Q.QQQ.QQ.QQQ.Q..Q.....Q",
+"QQQQQ..QQ.Q....QQ..Q...Q.",
+"Q.....Q.Q..QQ..QQQ.QQQ.QQ",
+"Q.QQ....QQ.Q.......Q.QQ.Q",
+"Q.Q.QQQ.Q..Q...QQQQQQ.Q..",
+"........Q...QQQ.Q...Q....",
+"QQQQQQQ...QQ....Q.Q.Q...Q",
+"Q.....Q..Q..QQ.QQ...Q..Q.",
+"Q.QQQ.Q..QQ.Q.QQQQQQQ.QQ.",
+"Q.QQQ.Q..Q....Q.Q.Q.....Q",
+"Q.QQQ.Q..Q.QQ........QQ.Q",
+"Q.....Q...QQ..Q.QQ.QQ...Q",
+"QQQQQQQ.QQQ..QQ.QQ...Q..Q"];
+
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x1a1a20, 34, 64);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.1, 130);
+camera.position.set(13, 9, 15);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 4, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.minDistance = 8;
+controls.maxDistance = 40;
+controls.maxPolarAngle = Math.PI * 0.55;
+
+window.setView = (polarDeg, aziDeg, dist = 22) => {
+  const p = THREE.MathUtils.degToRad(polarDeg), a = THREE.MathUtils.degToRad(aziDeg);
+  const t = controls.target;
+  camera.position.set(
+    t.x + dist*Math.sin(p)*Math.sin(a),
+    t.y + dist*Math.cos(p),
+    t.z + dist*Math.sin(p)*Math.cos(a)
+  );
+  camera.lookAt(t);
+};
+
+scene.add(new THREE.HemisphereLight(0xe8ecff, 0x2c2c38, 0.95));
+const sun = new THREE.DirectionalLight(0xfff0dd, 0.85);
+sun.position.set(9, 15, 7);
+scene.add(sun);
+const emberLight = new THREE.PointLight(0xff5a1e, 14, 9);
+scene.add(emberLight);
+
+let seed = 41;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const M = new THREE.Matrix4();
+const C = new THREE.Color();
+const Q = new THREE.Quaternion();
+const E = new THREE.Euler();
+const V1 = new THREE.Vector3();
+const SCL = new THREE.Vector3(1,1,1);
+const HIDE = new THREE.Matrix4().makeScale(0,0,0);
+
+// ---------- square ground ----------
+const S = 17;
+const ground = new THREE.Mesh(
+  new THREE.BoxGeometry(S, 0.22, S),
+  new THREE.MeshLambertMaterial({color:0x1e1e24})
+);
+ground.position.y = -0.11;
+scene.add(ground);
+const rimMat = new THREE.MeshBasicMaterial({color:0x6a6a74});
+[[0,-S/2],[0,S/2],[-S/2,0],[S/2,0]].forEach(([x,z], i) => {
+  const r = new THREE.Mesh(new THREE.BoxGeometry(i<2?S+0.1:0.1, 0.08, i<2?0.1:S+0.1), rimMat);
+  r.position.set(x, 0.02, z);
+  scene.add(r);
+});
+
+// ---------- cigar (pivoted at the filter end, as if held) ----------
+const CS = 0.18;
+const cigGroup = new THREE.Group();
+cigGroup.position.set(6.6, 6.9, 0);
+const TILT = -0.09;
+cigGroup.rotation.z = TILT;
+scene.add(cigGroup);
+
+const bodyCells = [];   // [x,y,z,colorKind]  0=filter 1=band 2=paper 3=ash
+const emberCells = [];
+for (let x = 0; x >= -7.0; x -= CS)
+for (let y = -0.54; y <= 0.55; y += CS)
+for (let z = -0.54; z <= 0.55; z += CS) {
+  if (y*y + z*z > 0.31) continue;
+  if (x > -2.0)      bodyCells.push([x,y,z,0]);
+  else if (x > -2.3) bodyCells.push([x,y,z,1]);
+  else if (x > -6.2) bodyCells.push([x,y,z,2]);
+  else if (x > -6.5) bodyCells.push([x,y,z,3]);
+  else               emberCells.push([x,y,z]);
+}
+const voxGeo = new THREE.BoxGeometry(CS*0.99, CS*0.99, CS*0.99);
+const bodyMat = new THREE.MeshLambertMaterial({color:0xffffff, transparent:true, opacity:1});
+const body = new THREE.InstancedMesh(voxGeo, bodyMat, bodyCells.length);
+bodyCells.forEach(([x,y,z,k], i) => {
+  M.makeTranslation(x, y, z);
+  body.setMatrixAt(i, M);
+  const v = 0.9 + (rnd()-0.5)*0.12;
+  if (k === 0)      C.setRGB(0.85*v, 0.6*v, 0.3*v);
+  else if (k === 1) C.setRGB(0.72*v, 0.44*v, 0.16*v);
+  else if (k === 2) C.setRGB(0.93*v, 0.93*v, 0.9*v);
+  else              C.setRGB(0.32*v, 0.3*v, 0.3*v);
+  body.setColorAt(i, C);
+});
+body.instanceColor.needsUpdate = true;
+cigGroup.add(body);
+
+const emberMat = new THREE.MeshLambertMaterial({color:0xffffff, emissive:0xff3c00, emissiveIntensity:0.8, transparent:true, opacity:1});
+const ember = new THREE.InstancedMesh(voxGeo, emberMat, emberCells.length);
+const emberCols = [0xff6a1e, 0xff3c00, 0xffb347, 0xd92800];
+emberCells.forEach(([x,y,z], i) => {
+  M.makeTranslation(x, y, z);
+  ember.setMatrixAt(i, M);
+  C.set(emberCols[(rnd()*emberCols.length)|0]);
+  ember.setColorAt(i, C);
+});
+ember.instanceColor.needsUpdate = true;
+cigGroup.add(ember);
+
+// cigar tip in world coordinates (approx, with the tilt)
+const TIP = new THREE.Vector3(6.6 - 6.8*Math.cos(TILT), 6.9 + 6.8*Math.sin(TILT), 0);
+
+// ---------- smoke: gray pixels that rise ----------
+const NSMOKE = 110;
+const smokeGeo = new THREE.BoxGeometry(0.17, 0.17, 0.17);
+const smokeMat = new THREE.MeshLambertMaterial({color:0xffffff, transparent:true, opacity:1});
+const smoke = new THREE.InstancedMesh(smokeGeo, smokeMat, NSMOKE);
+const puffs = [];
+for (let i = 0; i < NSMOKE; i++) {
+  puffs.push({age:rnd()*4, life:3+rnd()*2, rise:1.1+rnd()*0.8, dx:(rnd()-0.5)*0.5, dz:(rnd()-0.5)*0.5, ph:rnd()*6.28, sc:0.7+rnd()*0.9});
+  const v = 0.5 + rnd()*0.3;
+  C.setRGB(v, v, v*1.04);
+  smoke.setColorAt(i, C);
+}
+smoke.instanceColor.needsUpdate = true;
+scene.add(smoke);
+
+// ---------- ash that forms the QR ----------
+const MSZ = 0.336;
+const modules = [];
+QR.forEach((row, r) => [...row].forEach((ch, c) => {
+  if (ch === 'Q') modules.push({x:(c-12)*MSZ, z:(r-12)*MSZ});
+}));
+const order = modules.map((_, i) => i);
+for (let i = order.length-1; i > 0; i--) { const j = (rnd()*(i+1))|0; [order[i],order[j]] = [order[j],order[i]]; }
+const jobs = modules.map((m, i) => ({
+  tx:m.x, tz:m.z,
+  delay:order.indexOf(i)*0.004,
+  dur:0.9+rnd()*0.9, p:0, ph:rnd()*6.28,
+  sx:TIP.x+(rnd()-0.5)*0.5, sy:TIP.y+(rnd()-0.5)*0.4, sz:TIP.z+(rnd()-0.5)*0.5,
+  cx:(TIP.x+m.x)/2+(rnd()-0.5)*2.4, cy:3+rnd()*1.6, cz:(TIP.z+m.z)/2+(rnd()-0.5)*2.4,
+  rx:rnd()*5-2.5, ry:rnd()*5-2.5, landed:false
+}));
+const ashGeo = new THREE.BoxGeometry(MSZ*0.95, 0.12, MSZ*0.95);
+const ashMat = new THREE.MeshLambertMaterial({color:0xffffff});
+const ash = new THREE.InstancedMesh(ashGeo, ashMat, jobs.length);
+const ashGrays = [0xc9c9d0, 0xb4b4bc, 0xd8d8de, 0xa5a5ad];
+jobs.forEach((j, i) => {
+  ash.setMatrixAt(i, HIDE);
+  C.set(ashGrays[(rnd()*ashGrays.length)|0]);
+  ash.setColorAt(i, C);
+});
+ash.instanceColor.needsUpdate = true;
+scene.add(ash);
+
+// ---------- interaction ----------
+const btn = document.getElementById('btn');
+const hint = document.getElementById('hint');
+let mode = 'idle';
+let formT = 0, landedCount = 0;
+
+btn.addEventListener('click', () => {
+  if (mode === 'idle') {
+    mode = 'forming'; formT = 0; landedCount = 0;
+    btn.disabled = true; btn.textContent = 'TAPPING…';
+    hint.textContent = 'a little tap — the ash falls…';
+  } else if (mode === 'done') {
+    jobs.forEach(j => { j.p = 0; j.landed = false; });
+    for (let i = 0; i < jobs.length; i++) ash.setMatrixAt(i, HIDE);
+    ash.instanceMatrix.needsUpdate = true;
+    mode = 'idle';
+    btn.textContent = 'TAP ASH';
+    hint.textContent = 'the smoke rises in pixels — the ash draws the QR code';
+  }
+});
+
+const smooth = p => p*p*(3-2*p);
+window.__state = () => ({mode, formT, landedCount, total:jobs.length, frames:window.__fr||0});
+
+// ---------- animation ----------
+const clock = new THREE.Clock();
+function animate(){
+  window.__fr = (window.__fr||0)+1;
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+
+  // gentle float + shake when pressed
+  cigGroup.position.y = 6.9 + Math.sin(t*0.8)*0.08;
+  let rot = TILT + Math.sin(t*0.6)*0.012;
+  if (mode === 'forming' && formT < 1.4) {
+    rot += Math.sin(formT*34)*0.1*Math.exp(-formT*2.6);
+  }
+  cigGroup.rotation.z = rot;
+
+  // flickering ember
+  const flick = 0.75 + Math.sin(t*7.3)*0.2 + Math.sin(t*13.1+1.7)*0.12;
+  emberMat.emissiveIntensity = flick;
+  emberLight.intensity = 9 + flick*7;
+  emberLight.position.set(TIP.x, TIP.y, TIP.z);
+
+  // top view: the cigar and smoke fade out
+  const camDir = camera.position.clone().sub(controls.target);
+  const polar = Math.acos(Math.min(1, Math.max(-1, camDir.y / camDir.length())));
+  const fadeTarget = THREE.MathUtils.clamp((THREE.MathUtils.radToDeg(polar) - 20) / 26, 0, 1);
+  bodyMat.opacity += (fadeTarget - bodyMat.opacity) * Math.min(1, dt*6);
+  emberMat.opacity = bodyMat.opacity;
+  smokeMat.opacity = bodyMat.opacity;
+  body.visible = ember.visible = smoke.visible = bodyMat.opacity > 0.02;
+
+  // smoke
+  puffs.forEach((s, i) => {
+    s.age += dt;
+    if (s.age > s.life) { s.age = 0; s.life = 3+rnd()*2; s.rise = 1.1+rnd()*0.8; s.dx = (rnd()-0.5)*0.5; s.dz = (rnd()-0.5)*0.5; s.ph = rnd()*6.28; s.sc = 0.7+rnd()*0.9; }
+    const a = s.age, n = a/s.life;
+    V1.set(
+      TIP.x + s.dx*a + Math.sin(a*1.6+s.ph)*0.35*n,
+      TIP.y + 0.3 + s.rise*a,
+      TIP.z + s.dz*a + Math.cos(a*1.4+s.ph)*0.35*n
+    );
+    const k = Math.sin(Math.PI*Math.min(n,1))*s.sc;
+    E.set(a*0.8+s.ph, a*0.6, 0);
+    Q.setFromEuler(E);
+    M.compose(V1, Q, V1.clone().set(k,k,k));
+    smoke.setMatrixAt(i, M);
+  });
+  smoke.instanceMatrix.needsUpdate = true;
+
+  // ash falling toward its module
+  if (mode === 'forming') {
+    formT += dt;
+    let touched = false;
+    jobs.forEach((j, i) => {
+      if (j.landed || formT < j.delay) return;
+      j.p += dt / j.dur;
+      touched = true;
+      if (j.p >= 1) {
+        j.landed = true; landedCount++;
+        V1.set(j.tx + (rnd()-0.5)*0.03, 0.06 + 0.11, j.tz + (rnd()-0.5)*0.03);
+        E.set(0, (rnd()-0.5)*0.3, 0);
+        Q.setFromEuler(E);
+        M.compose(V1, Q, SCL);
+        ash.setMatrixAt(i, M);
+      } else {
+        const p = j.p, q = 1-p;
+        V1.set(
+          q*q*j.sx + 2*q*p*j.cx + p*p*j.tx + Math.sin(p*18+j.ph)*0.12*(1-p),
+          q*q*j.sy + 2*q*p*j.cy + p*p*0.17,
+          q*q*j.sz + 2*q*p*j.cz + p*p*j.tz + Math.cos(p*16+j.ph)*0.12*(1-p)
+        );
+        E.set(p*j.rx+j.ph, p*j.ry, Math.sin(p*12+j.ph)*0.4);
+        Q.setFromEuler(E);
+        M.compose(V1, Q, SCL);
+        ash.setMatrixAt(i, M);
+      }
+    });
+    if (touched) ash.instanceMatrix.needsUpdate = true;
+    if (landedCount === jobs.length) {
+      mode = 'done';
+      btn.disabled = false; btn.textContent = 'CLEAR ASH';
+      hint.textContent = 'the ash formed the QR — look at it from above · pen.dev';
+    }
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
