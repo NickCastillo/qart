@@ -2,7 +2,7 @@
 
 ## Primary project
 
-This repo root (`/Users/nick/Code/qart`) *is* the Vite + React app — `src/`, `public/`,
+This repo root (`/Users/nick/Code/qart`) _is_ the Vite + React app — `src/`, `public/`,
 `index.html`, `package.json`, etc. all live here directly (there is no nested `qart/`
 subfolder anymore; it was flattened into the repo root). Always implement and edit here.
 

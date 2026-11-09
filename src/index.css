@@ -218,10 +218,10 @@ body.loaded .rise {
   margin: 0;
 }
 
+/* background comes inline from Finder.tsx's COLORS palette */
 .finder-canvas-link {
   display: block;
   aspect-ratio: 1;
-  background: var(--surface-dark);
   overflow: hidden;
 }
 
@@ -552,10 +552,11 @@ body.loaded .rise {
 .studio-title {
   margin: 0;
   display: flex;
-  gap: 32px;
+  flex-wrap: wrap;
+  gap: 24px;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(64px, 11vw, 180px);
+  font-size: clamp(44px, 7vw, 100px);
   line-height: 1;
 }
 

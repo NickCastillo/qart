@@ -7,10 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#EEF0F3;--ink:#0A0A0A;--acc:#FF3D00;--dim:#5C6066;--nav:64px;--strip:124px;--edge:40px}
+  :root{--bg:#EEF0F3;--ink:#0A0A0A;--acc:#FF3D00;--dim:#5C6066;--nav:64px;--header:48px;--strip:124px;--footer:56px;--edge:40px}
   html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:"Schibsted Grotesk",ui-sans-serif,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
   canvas{position:fixed;inset:0;z-index:1;display:block}
-  #ghost{position:fixed;z-index:0;left:calc(var(--edge) - .05em);top:calc(var(--nav) + 8px);font-weight:600;font-size:clamp(88px,19vw,290px);line-height:1;letter-spacing:-.05em;color:var(--acc);user-select:none;transition:opacity .3s ease-out}
+  #ghost{position:fixed;z-index:0;left:calc(var(--edge) - .05em);top:calc(var(--nav) + var(--header) + 14px);font-weight:600;font-size:clamp(72px,15vw,220px);line-height:1;letter-spacing:-.05em;color:var(--acc);user-select:none;transition:opacity .3s ease-out}
   body.paper #ghost{opacity:0}
   #nav{position:fixed;z-index:3;top:0;left:0;right:0;height:var(--nav);box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;padding:0 var(--edge);background:var(--bg);border-bottom:1.5px solid var(--ink)}
   #navL{display:flex;align-items:center;gap:22px}
@@ -21,15 +21,20 @@
   #navR{display:flex;gap:32px}
   #navR a{font-weight:500;font-size:16px;color:var(--ink);text-decoration:none}
   #navR a:hover{color:var(--acc)}
-  #meta{position:fixed;z-index:2;top:calc(var(--nav) + 20px);right:var(--edge);text-align:right;font-size:12px;line-height:1.75;letter-spacing:.03em;color:var(--dim);pointer-events:none}
+  #pageHeader{position:fixed;z-index:2;top:var(--nav);left:0;right:0;height:var(--header);box-sizing:border-box;display:flex;align-items:center;padding:0 var(--edge);background:var(--bg);border-bottom:1.5px solid var(--ink)}
+  #back{display:flex;align-items:center;gap:8px;width:fit-content;font-family:"Geist Mono",ui-monospace,monospace;font-size:13px;letter-spacing:.04em;color:var(--ink);text-decoration:none;transition:opacity .18s ease-out}
+  #back:hover{opacity:.6}
+  #back svg{display:block}
+  #meta{position:fixed;z-index:2;top:calc(var(--nav) + var(--header) + 20px);right:var(--edge);text-align:right;font-size:12px;line-height:1.75;letter-spacing:.03em;color:var(--dim);pointer-events:none}
   #song{color:var(--ink)}
   #song i{display:inline-block;width:8px;height:8px;margin-right:8px;background:var(--acc)}
-  #foot{position:fixed;z-index:2;left:var(--edge);bottom:calc(var(--strip) + 20px);max-width:52%;font-size:12px;line-height:1.7;letter-spacing:.02em;color:var(--dim);pointer-events:none}
-  #views{position:fixed;z-index:2;right:var(--edge);bottom:calc(var(--strip) + 20px);display:flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden;background:var(--bg)}
+  #foot{position:fixed;z-index:2;left:var(--edge);bottom:calc(var(--strip) + var(--footer) + 20px);max-width:52%;font-size:12px;line-height:1.7;letter-spacing:.02em;color:var(--dim);pointer-events:none}
+  #views{position:fixed;z-index:2;right:var(--edge);bottom:calc(var(--strip) + var(--footer) + 20px);display:flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden;background:var(--bg)}
   .vbtn{padding:13px 24px;border:0;background:transparent;color:var(--ink);font-family:inherit;font-weight:600;font-size:15px;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
   .vbtn:hover{background:#E0E3E8}
   .vbtn.on{background:var(--ink);color:#fff}
-  #dock{position:fixed;z-index:3;left:0;right:0;bottom:0;height:var(--strip);display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg);border-top:1.5px solid var(--ink)}
+  #dock{position:fixed;z-index:3;left:0;right:0;bottom:var(--footer);height:var(--strip);display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg);border-top:1.5px solid var(--ink)}
+  #footer{position:fixed;z-index:3;left:0;right:0;bottom:0;height:var(--footer);box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;padding:0 var(--edge);background:var(--bg);border-top:1.5px solid var(--ink);font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;color:var(--dim)}
   .fig{display:flex;flex-direction:column;justify-content:space-between;min-width:0;padding:15px 24px 16px;border:0;border-right:1.5px solid var(--ink);background:transparent;color:var(--ink);font-family:inherit;text-align:left;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
   .fig:first-child{padding-left:var(--edge)}
   .fig:last-child{border-right:0;padding-right:var(--edge)}
@@ -46,7 +51,7 @@
   @media (max-width:760px){
     :root{--edge:18px;--strip:92px;--nav:56px}
     #where,#navR a:last-child{display:none}
-    #meta{left:var(--edge);right:auto;top:calc(var(--nav) + 104px);text-align:left;font-size:11px}
+    #meta{left:var(--edge);right:auto;top:calc(var(--nav) + var(--header) + 48px);text-align:left;font-size:11px}
     #foot{display:none}
     #views{left:var(--edge);right:var(--edge)}
     .vbtn{flex:1}
@@ -71,6 +76,12 @@
   </div>
   <div id="navR"><a href="/#index" target="_top">Projects</a><a href="/#why" target="_top">Why</a></div>
 </nav>
+<header id="pageHeader">
+  <a id="back" href="/#index" target="_top">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+    BACK TO CONSTELLATION
+  </a>
+</header>
 <div id="meta">
   <div id="song"><i></i><span id="songL">—</span></div>
   <div id="count"></div>
@@ -84,6 +95,9 @@
   <button class="vbtn" id="bQR">QR</button>
 </div>
 <div id="dock"></div>
+<footer id="footer">
+  <span>QaRt · for fun</span>
+</footer>
 <script type="module">
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -167,9 +181,13 @@ for (const f of FIGS) {
   const built = buildVoxels(f.front, f.qr);
   f.vox = built.vox;
   f.finderFlags = built.finder;
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  for (const [x, y] of f.vox) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
-  f.figW = maxX - minX; f.figH = maxY - minY;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const [x, y, z] of f.vox) {
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+    if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+  }
+  f.figW = maxX - minX; f.figH = maxY - minY; f.figD = maxZ - minZ;
 }
 const N = Math.max(...FIGS.map(f => f.vox.length));
 for (const f of FIGS) {
@@ -204,16 +222,29 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 600);
+const pageHeader = document.getElementById('pageHeader');
 let vpW = 0, vpH = 0;
+function syncChromeShift(){
+  const cs = getComputedStyle(document.documentElement);
+  const nav = parseFloat(cs.getPropertyValue('--nav'));
+  const strip = parseFloat(cs.getPropertyValue('--strip'));
+  const footer = parseFloat(cs.getPropertyValue('--footer'));
+  const topChrome = nav + pageHeader.getBoundingClientRect().height;
+  const bottomChrome = strip + footer;
+  /* camera.setViewOffset only skews the frustum when its window is smaller
+     than the declared full size; with both equal (as here) it's a no-op, so
+     the chrome asymmetry is compensated with a plain CSS shift instead */
+  renderer.domElement.style.transform = `translateY(${(topChrome - bottomChrome)/2}px)`;
+}
 function sizeViewport(){
   const w = innerWidth || 1200, h = innerHeight || 760;
-  if (w === vpW && h === vpH) return;
-  vpW = w; vpH = h;
-  renderer.setSize(w, h);
-  camera.aspect = w/h;
-  const cs = getComputedStyle(document.documentElement);
-  const shift = (parseFloat(cs.getPropertyValue('--strip')) - parseFloat(cs.getPropertyValue('--nav')))/2;
-  camera.setViewOffset(w, h, 0, shift, w, h);
+  if (w !== vpW || h !== vpH) {
+    vpW = w; vpH = h;
+    renderer.setSize(w, h);
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+  }
+  syncChromeShift();
 }
 document.body.prepend(renderer.domElement);
 sizeViewport();
@@ -238,17 +269,39 @@ const UP_Y = new THREE.Vector3(0, 1, 0);
 const upFor = (mode, f) => mode === 'fig' ? UP_Y.clone()
   : new THREE.Vector3(Math.sin(THREE.MathUtils.degToRad(f.qrRoll)), 0, Math.cos(THREE.MathUtils.degToRad(f.qrRoll)));
 let tween = null;
-const flyTo = (p, a, d, up) => { tween = {s:camera.position.clone(), e:place(p, a, d), upS:camera.up.clone(), upE:up, t:0}; };
+/* idle auto-rotation sways within this arc of the figure's own calibrated
+   azimuth, rather than spinning freely — keeps it from ever turning to the
+   worst-case diagonal angle, where a wide figure would overflow the frame */
+const ROT_SWAY = THREE.MathUtils.degToRad(18);
+let baseAzi = 0, swayDir = 1;
+const flyTo = (p, a, d, up) => {
+  tween = {s:camera.position.clone(), e:place(p, a, d), upS:camera.up.clone(), upE:up, t:0};
+  baseAzi = THREE.MathUtils.degToRad(a); swayDir = 1;
+};
 window.setView = (p, a, d = 40) => { camera.position.copy(place(p, a, d)); camera.lookAt(0, 0, 0); };
-/* figures share the same nominal width (fixed 50-col canvas) but differ a lot in
-   drawn height — scale each figure's distance by its own height, calibrated so
-   the reference figure (dog) keeps the original, already-good d:40 framing */
+/* figures differ a lot in drawn height, so each gets its own distance scaled
+   from its height, calibrated so the reference figure (dog) keeps the
+   original, already-good d:40 framing — but a wide/flat figure (car) can't
+   be fit by height alone on a narrower window, so the width also gets its
+   own required distance (using the camera's current aspect) and the larger
+   of the two wins. The width term uses the apparent width at the edge of the
+   auto-rotation sway (ROT_SWAY), not just the face-on width — the QR data
+   gives the cloud real depth, so turning exposes some of it as extra width,
+   and a bare safety floor (not the aesthetic HEIGHT_MARGIN) is enough since
+   it only has to cover that bounded turn, not a full 45° worst case. */
 const FOV_HALF = THREE.MathUtils.degToRad(15);
 const REF_FIG = FIGS.find(x => x.key === 'perro');
 const HEIGHT_MARGIN = 40*Math.tan(FOV_HALF)/(REF_FIG.figH/2);
-const fitDist = h => (h/2*HEIGHT_MARGIN)/Math.tan(FOV_HALF);
+const WIDTH_MARGIN = 1.08;
+const fitDist = f => {
+  const swayWidth = f.figW*Math.cos(ROT_SWAY) + f.figD*Math.sin(ROT_SWAY);
+  return Math.max(
+    (f.figH/2*HEIGHT_MARGIN)/Math.tan(FOV_HALF),
+    (swayWidth/2*WIDTH_MARGIN)/(Math.tan(FOV_HALF)*camera.aspect),
+  );
+};
 const viewTarget = (mode, f) => mode === 'fig'
-  ? {p:90, a:f.figAzi, d:fitDist(f.figH)}
+  ? {p:90, a:f.figAzi, d:fitDist(f)}
   : {p:4, a:0, d:76};
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x5A5D63, 1.25));
@@ -362,7 +415,14 @@ let autoRot = !matchMedia('(prefers-reduced-motion: reduce)').matches, resumeT =
 controls.addEventListener('start', () => { autoRot = false; resumeT = 5; });
 
 window.__state = () => ({fig:FIGS[figIdx].key, view, blocks:N, frames:window.__fr||0, inkT:+inkT.toFixed(2)});
-window.__figs = () => FIGS.map(f => ({key:f.key, h:+f.figH.toFixed(2), d:+viewTarget('fig', f).d.toFixed(1)}));
+window.__cam = () => ({
+  pos: camera.position.toArray().map(v=>+v.toFixed(3)),
+  dist: +camera.position.length().toFixed(3),
+  aziDeg: +THREE.MathUtils.radToDeg(Math.atan2(camera.position.x, camera.position.z)).toFixed(2),
+  baseAziDeg: +THREE.MathUtils.radToDeg(baseAzi).toFixed(2),
+  aspect: +camera.aspect.toFixed(3),
+});
+window.__figs = () => FIGS.map(f => ({key:f.key, w:+f.figW.toFixed(2), h:+f.figH.toFixed(2), dep:+f.figD.toFixed(2), d:+viewTarget('fig', f).d.toFixed(1)}));
 
 const C2 = new THREE.Color();
 const M = new THREE.Matrix4(), V = new THREE.Vector3(), Q = new THREE.Quaternion(), SCv = new THREE.Vector3(1,1,1);
@@ -413,7 +473,10 @@ function step(dt){
   if (!autoRot && resumeT > 0) { resumeT -= dt; if (resumeT <= 0 && view === 'fig') autoRot = true; }
   if (autoRot && view === 'fig' && !tween) {
     const dir = camera.position.clone();
-    const ang = Math.atan2(dir.x, dir.z) + dt*0.07;
+    let ang = Math.atan2(dir.x, dir.z);
+    const rel = Math.atan2(Math.sin(ang - baseAzi), Math.cos(ang - baseAzi));
+    if (rel >= ROT_SWAY) swayDir = -1; else if (rel <= -ROT_SWAY) swayDir = 1;
+    ang += dt*0.07*swayDir;
     const rxz = Math.hypot(dir.x, dir.z);
     camera.position.set(Math.sin(ang)*rxz, dir.y, Math.cos(ang)*rxz);
     camera.lookAt(0, 0, 0);

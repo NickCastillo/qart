@@ -5,9 +5,13 @@ const URL_A = "https://www.instagram.com/_nickcamera";
 const URL_B = "https://www.youtube.com/watch?v=FvOpPeKSf_4";
 const URLS = [URL_A, URL_B];
 
-const BG = "#0A0A0A";
-const CREAM = "#EEF0F3";
-const ACCENT = "#FF3D00";
+/* ---- palette — edit these four values to recolor the whole figure ---- */
+const COLORS = {
+  bg: "#eef0f3" /* card background */,
+  module: "#0A0A0A" /* data pixels at rest */,
+  finder: "#FF3D00" /* the three corner squares */,
+  flight: "#FF3D00" /* data pixels warm toward this while flying */,
+};
 const SZ = 380;
 const DUR = { hold: 3, out: 0.9, swarm: 0.85, in: 1.1 };
 
@@ -71,13 +75,20 @@ function buildGrid(url: string, version: TypeNumber, n: number): Mod[] {
   return out;
 }
 
-const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const hex = (h: string) =>
+  [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const mixHex = (a: number[], b: number[], t: number) =>
   "#" +
   [0, 1, 2]
-    .map((i) => Math.round(a[i] + (b[i] - a[i]) * t).toString(16).padStart(2, "0"))
+    .map((i) =>
+      Math.round(a[i] + (b[i] - a[i]) * t)
+        .toString(16)
+        .padStart(2, "0"),
+    )
     .join("");
-const RAMP = Array.from({ length: 17 }, (_, i) => mixHex(hex(CREAM), hex(ACCENT), i / 16));
+const RAMP = Array.from({ length: 17 }, (_, i) =>
+  mixHex(hex(COLORS.module), hex(COLORS.flight), i / 16),
+);
 const warm = (t: number) => RAMP[Math.round(Math.max(0, Math.min(1, t)) * 16)];
 
 const clamp01 = (p: number) => (p < 0 ? 0 : p > 1 ? 1 : p);
@@ -87,7 +98,7 @@ const outQuint = (p: number) => 1 - Math.pow(1 - p, 5);
 /* Port of makeNucleo() from node zPFjV (hero-animations.html): every module
    flies a quadratic bezier out to a random swarm anchor, wanders there on 4
    sinusoids, then bezier-lands on its next slot — finders ride the exact
-   same flight, staying gold throughout, landing on the position they'd
+   same flight, keeping the finder color throughout, landing on the position they'd
    occupy after a 90°-CW rotation of the grid (still a valid, scannable
    QR — finder detection is orientation-agnostic). Nothing ever renders
    outside the canvas square (clampC). Generalized from the prototype's
@@ -98,9 +109,18 @@ export function Finder() {
   const linkRef = useRef<HTMLAnchorElement>(null);
 
   const { n, grids } = useMemo(() => {
-    const version = Math.max(minimalVersion(URL_A), minimalVersion(URL_B)) as TypeNumber;
+    const version = Math.max(
+      minimalVersion(URL_A),
+      minimalVersion(URL_B),
+    ) as TypeNumber;
     const gridN = version * 4 + 17;
-    return { n: gridN, grids: [buildGrid(URL_A, version, gridN), buildGrid(URL_B, version, gridN)] };
+    return {
+      n: gridN,
+      grids: [
+        buildGrid(URL_A, version, gridN),
+        buildGrid(URL_B, version, gridN),
+      ],
+    };
   }, []);
 
   useEffect(() => {
@@ -132,7 +152,7 @@ export function Finder() {
     };
     const clear = (a = 1) => {
       ctx.globalAlpha = a;
-      ctx.fillStyle = BG;
+      ctx.fillStyle = COLORS.bg;
       ctx.fillRect(0, 0, SZ, SZ);
       ctx.globalAlpha = 1;
     };
@@ -141,12 +161,15 @@ export function Finder() {
       if (linkRef.current) linkRef.current.href = URLS[qi];
     };
 
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (reduced) {
       let qi = 0;
       const draw = () => {
         clear(1);
-        for (const m of grids[qi]) mod(px(m.c), py(m.r), 1, m.fin ? ACCENT : CREAM, 1);
+        for (const m of grids[qi])
+          mod(px(m.c), py(m.r), 1, m.fin ? COLORS.finder : COLORS.module, 1);
         setLink(qi);
       };
       draw();
@@ -160,45 +183,9 @@ export function Finder() {
     let seed = 7;
     const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
-    const PAD = H + CELL * 0.3;
-    /* TL, TR, BR, BL — a QR always occupies 3 of these 4; which one is
-       empty depends on how many quarter-turns it's rotated. */
-    const CORNERS: [number, number][] = [
-      [0, 0],
-      [n - 7, 0],
-      [n - 7, n - 7],
-      [0, n - 7],
-    ];
-    const cornerBoxes = (steps: number) =>
-      CORNERS.filter((_, i) => i !== (2 + steps) % 4).map(([c, r]) => {
-        const x0 = px(c) - PAD;
-        const y0 = py(r) - PAD;
-        const x1 = px(c) + 6 * CELL + BOX + PAD;
-        const y1 = py(r) + 6 * CELL + BOX + PAD;
-        return { x0, y0, x1, y1, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, hx: (x1 - x0) / 2, hy: (y1 - y0) / 2 };
-      });
-    /* exclusion zone for data modules: union of the finders' current corners
-       and the corners they're rotating into, recomputed per build(). */
-    let BOXES = cornerBoxes(0);
-    const isFree = (x: number, y: number) =>
-      !BOXES.some((b) => x > b.x0 && x < b.x1 && y > b.y0 && y < b.y1);
-
-    let EX = 0;
-    let EY = 0;
-    const evict = (x: number, y: number) => {
-      for (const b of BOXES) {
-        if (x <= b.x0 || x >= b.x1 || y <= b.y0 || y >= b.y1) continue;
-        let dx = x - b.cx;
-        const dy = y - b.cy;
-        if (dx === 0 && dy === 0) dx = 1e-3;
-        const k = Math.min(b.hx / Math.max(Math.abs(dx), 1e-6), b.hy / Math.max(Math.abs(dy), 1e-6));
-        x = b.cx + dx * k;
-        y = b.cy + dy * k;
-      }
-      EX = clampC(x);
-      EY = clampC(y);
-    };
-
+    /* swarm anchors may land anywhere on the card (finder corners included —
+       during flight the finders themselves are airborne, so there is nothing
+       to collide with, and carving the corners out left visible holes) */
     const LO = BOX * 0.7;
     const HI = SZ - BOX * 0.7;
     const anchor = (ox: number, oy: number): [number, number] => {
@@ -207,15 +194,10 @@ export function Finder() {
         const r = CELL * (2.4 + rnd() * 5.2);
         const x = ox + Math.cos(a) * r;
         const y = oy + Math.sin(a) * r;
-        if (x < LO || x > HI || y < LO || y > HI || !isFree(x, y)) continue;
+        if (x < LO || x > HI || y < LO || y > HI) continue;
         return [x, y];
       }
-      for (let k = 0; k < 60; k++) {
-        const x = LO + rnd() * (HI - LO);
-        const y = LO + rnd() * (HI - LO);
-        if (isFree(x, y)) return [x, y];
-      }
-      return [ox, oy];
+      return [LO + rnd() * (HI - LO), LO + rnd() * (HI - LO)];
     };
 
     const mid = (n - 1) / 2;
@@ -234,7 +216,8 @@ export function Finder() {
       }
       return { c, r, fin: m.fin };
     };
-    const rotateGrid = (grid: Mod[], steps: number) => grid.map((m) => rotateMod(m, steps));
+    const rotateGrid = (grid: Mod[], steps: number) =>
+      grid.map((m) => rotateMod(m, steps));
 
     let qi = 0;
     let phase: "hold" | "out" | "swarm" | "in" = "hold";
@@ -242,10 +225,10 @@ export function Finder() {
     let rotationSteps = 0;
     let fly: Fly[] = [];
 
-    const bend = () => (rnd() < 0.5 ? -1 : 1) * CELL * (1.8 + rnd() * 5.4);
+    const bend = () => (rnd() < 0.5 ? -1 : 1) * CELL * (1.2 + rnd() * 3.2);
     /* one module's full out→swarm→in flight descriptor, from its current
        cell (a) to its next one (b) — finders ride the exact same erratic
-       bezier+swarm dance as data, just rendered gold the whole way and
+       bezier+swarm dance as data, just keeping the finder color throughout and
        landing on the ROTATED corner instead of a canonical one. */
     const makeFly = (a: Mod, b: Mod, finder: boolean): Fly => {
       const ax = px(a.c) + H;
@@ -256,16 +239,33 @@ export function Finder() {
       const dOut = ((1 - rA) * 0.45 + rnd() * 0.55) * 0.42 * DUR.out;
       const dIn = (rB * 0.45 + rnd() * 0.55) * 0.42 * DUR.in;
       return {
-        ax, ay, bx: px(b.c) + H, by: py(b.r) + H,
-        hx, hy, c1: bend(), c2: bend(),
-        w1: 1.2 + rnd() * 2, w2: 1.2 + rnd() * 2,
-        w3: 0.25 + rnd() * 0.55, w4: 0.25 + rnd() * 0.55,
-        p1: rnd() * 6.283, p2: rnd() * 6.283, p3: rnd() * 6.283, p4: rnd() * 6.283,
-        A1: CELL * (0.18 + rnd() * 0.57), A2: CELL * (0.18 + rnd() * 0.57),
-        A3: CELL * (0.5 + rnd() * 1.2), A4: CELL * (0.5 + rnd() * 1.2),
-        dOut, kOut: (DUR.out - dOut) * (0.7 + rnd() * 0.3),
-        dIn, kIn: (DUR.in - dIn) * (0.7 + rnd() * 0.3),
-        ghostA: false, ghostB: false, finder,
+        ax,
+        ay,
+        bx: px(b.c) + H,
+        by: py(b.r) + H,
+        hx,
+        hy,
+        c1: bend(),
+        c2: bend(),
+        w1: 0.6 + rnd() * 0.9,
+        w2: 0.6 + rnd() * 0.9,
+        w3: 0.25 + rnd() * 0.45,
+        w4: 0.25 + rnd() * 0.45,
+        p1: rnd() * 6.283,
+        p2: rnd() * 6.283,
+        p3: rnd() * 6.283,
+        p4: rnd() * 6.283,
+        A1: CELL * (0.18 + rnd() * 0.5),
+        A2: CELL * (0.18 + rnd() * 0.5),
+        A3: CELL * (0.5 + rnd() * 1.1),
+        A4: CELL * (0.5 + rnd() * 1.1),
+        dOut,
+        kOut: (DUR.out - dOut) * (0.7 + rnd() * 0.3),
+        dIn,
+        kIn: (DUR.in - dIn) * (0.7 + rnd() * 0.3),
+        ghostA: false,
+        ghostB: false,
+        finder,
       };
     };
 
@@ -275,7 +275,6 @@ export function Finder() {
       const stepsB = (rotationSteps + 1) % 4;
       const A = rotateGrid(grids[qi], stepsA);
       const B = rotateGrid(grids[(qi + 1) % 2], stepsB);
-      BOXES = [...cornerBoxes(stepsA), ...cornerBoxes(stepsB)];
 
       /* finders occupy the same 49 coordinates in any QR of this size, so
          pairing A's and B's finder lists by plain index always matches the
@@ -301,8 +300,16 @@ export function Finder() {
     let AX = 0;
     let AY = 0;
     const swarmAt = (f: Fly, tt: number, k: number) => {
-      AX = f.hx + (f.A1 * Math.sin(tt * f.w1 + f.p1) + f.A3 * Math.sin(tt * f.w3 + f.p3)) * k;
-      AY = f.hy + (f.A2 * Math.sin(tt * f.w2 + f.p2) + f.A4 * Math.sin(tt * f.w4 + f.p4)) * k;
+      AX =
+        f.hx +
+        (f.A1 * Math.sin(tt * f.w1 + f.p1) +
+          f.A3 * Math.sin(tt * f.w3 + f.p3)) *
+          k;
+      AY =
+        f.hy +
+        (f.A2 * Math.sin(tt * f.w2 + f.p2) +
+          f.A4 * Math.sin(tt * f.w4 + f.p4)) *
+          k;
     };
     const bez = (p0: number, c: number, p1: number, t: number) => {
       const u = 1 - t;
@@ -313,13 +320,20 @@ export function Finder() {
     let last = performance.now();
     let tt = 0;
 
-    (window as unknown as { __qr?: () => object; __qrStep?: (now: number) => void }).__qr = () => ({
+    (
+      window as unknown as {
+        __qr?: () => object;
+        __qrStep?: (now: number) => void;
+      }
+    ).__qr = () => ({
       phase,
       pt: +pt.toFixed(2),
       qi,
       tt: +tt.toFixed(2),
     });
-    (window as unknown as { __qrStep?: (now: number) => void }).__qrStep = (now: number) => frame(now);
+    (window as unknown as { __qrStep?: (now: number) => void }).__qrStep = (
+      now: number,
+    ) => frame(now);
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
@@ -330,7 +344,14 @@ export function Finder() {
 
       if (pt >= DUR[phase]) {
         pt -= DUR[phase];
-        phase = phase === "hold" ? "out" : phase === "out" ? "swarm" : phase === "swarm" ? "in" : "hold";
+        phase =
+          phase === "hold"
+            ? "out"
+            : phase === "out"
+              ? "swarm"
+              : phase === "swarm"
+                ? "in"
+                : "hold";
         if (phase === "hold") {
           qi = (qi + 1) % 2;
           rotationSteps = (rotationSteps + 1) % 4;
@@ -340,11 +361,18 @@ export function Finder() {
       }
 
       const still = phase === "hold";
-      clear(still ? 1 : 0.32);
+      clear(still ? 1 : 0.28);
 
       for (const f of fly) {
         if (still) {
-          if (!f.ghostA) mod(f.ax - H, f.ay - H, 1, f.finder ? ACCENT : CREAM, 1);
+          if (!f.ghostA)
+            mod(
+              f.ax - H,
+              f.ay - H,
+              1,
+              f.finder ? COLORS.finder : COLORS.module,
+              1,
+            );
           continue;
         }
         let x: number;
@@ -356,7 +384,10 @@ export function Finder() {
           const e = outQuint(clamp01((pt - f.dOut) / f.kOut));
           swarmAt(f, tt, e);
           if (f.ghostA) {
-            x = AX; y = AY; s = 0.62 * e; al = e;
+            x = AX;
+            y = AY;
+            s = 0.62 * e;
+            al = e;
           } else {
             const vx = AX - f.ax;
             const vy = AY - f.ay;
@@ -368,8 +399,9 @@ export function Finder() {
           tone = e * 0.6;
         } else if (phase === "swarm") {
           swarmAt(f, tt, 1);
-          x = AX; y = AY;
-          s = 0.62 + 0.1 * Math.sin(tt * 2.4 + f.p1);
+          x = AX;
+          y = AY;
+          s = 0.62 + 0.1 * Math.sin(tt * 1.6 + f.p1);
           tone = 0.6;
         } else {
           const e = smooth(clamp01((pt - f.dIn) / f.kIn));
@@ -386,13 +418,13 @@ export function Finder() {
             s = 0.62 * (1 - e);
           }
         }
-        if (f.finder) {
-          EX = clampC(x);
-          EY = clampC(y);
-        } else {
-          evict(x, y);
-        }
-        mod(EX - H, EY - H, s, f.finder ? ACCENT : warm(tone), al);
+        mod(
+          clampC(x) - H,
+          clampC(y) - H,
+          s,
+          f.finder ? COLORS.finder : warm(tone),
+          al,
+        );
       }
     };
     raf = requestAnimationFrame(frame);
@@ -400,10 +432,14 @@ export function Finder() {
   }, [n, grids]);
 
   return (
-    <figure className="finder rise" style={{ "--d": "220ms" } as React.CSSProperties}>
+    <figure
+      className="finder rise"
+      style={{ "--d": "220ms" } as React.CSSProperties}
+    >
       <a
         ref={linkRef}
         className="finder-canvas-link"
+        style={{ background: COLORS.bg }}
         href={URL_A}
         target="_blank"
         rel="noreferrer"
@@ -411,7 +447,9 @@ export function Finder() {
       >
         <canvas ref={canvasRef} style={{ width: "100%", height: "100%" }} />
       </a>
-      <figcaption className="finder-caption">Real QR, feel free to scan.</figcaption>
+      <figcaption className="finder-caption" style={{ marginTop: "-25px" }}>
+        <span style={{ marginLeft: "5%" }}>Real QRs, feel free to scan.</span>
+      </figcaption>
     </figure>
   );
 }

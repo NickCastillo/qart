@@ -188,6 +188,42 @@
         ],
         "createdAt": "2026-11-07T18:06:09.511Z",
         "reason": "matches the main site's existing sitewide type system (Geist Mono + Schibsted Grotesk, already loaded in root index.html); this redesign's explicit goal was to align this piece's typography with the rest of the app, not introduce a new face"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist mono",
+        "files": [
+          "public/3d/arbol3d-v3.html"
+        ],
+        "createdAt": "2026-11-08T00:24:33.891Z",
+        "reason": "matches the sitewide type system (Geist Mono + Schibsted Grotesk) already established in root index.html and public/3d/constelacion.html; same rationale as the existing constelacion.html exception"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist mono",
+        "files": [
+          "public/3d/nube3d-v3.html"
+        ],
+        "createdAt": "2026-11-08T00:24:33.902Z",
+        "reason": "matches the sitewide type system (Geist Mono + Schibsted Grotesk) already established in root index.html and public/3d/constelacion.html; same rationale as the existing constelacion.html exception"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist mono",
+        "files": [
+          "public/3d/panal3d-v3.html"
+        ],
+        "createdAt": "2026-11-08T00:24:33.910Z",
+        "reason": "matches the sitewide type system (Geist Mono + Schibsted Grotesk) already established in root index.html and public/3d/constelacion.html; same rationale as the existing constelacion.html exception"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist mono",
+        "files": [
+          "public/3d/cigarro3d-v3.html"
+        ],
+        "createdAt": "2026-11-08T00:24:33.918Z",
+        "reason": "matches the sitewide type system (Geist Mono + Schibsted Grotesk) already established in root index.html and public/3d/constelacion.html; same rationale as the existing constelacion.html exception"
       }
     ]
   }

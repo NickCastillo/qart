@@ -22,11 +22,11 @@ export function StudioIndex() {
         </a>
         <div className="studio-title-row">
           <h1 className="studio-title">
-            3D <span className="accent">Pixels</span>
+            Living Scene <span className="accent">Studio</span>
           </h1>
           <p>
-            Four scenes made for fun, and in every one the same thing happens: whatever falls to the
-            floor is already part of the QR.
+            Four scenes, one place to play with them. Switch, rotate, and ask for the QR
+            whenever you want.
           </p>
         </div>
       </header>
