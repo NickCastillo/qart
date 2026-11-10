@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#EEF0F3;--ink:#0A0A0A;--acc:#FF3D00;--dim:#5C6066;--nav:64px;--header:48px;--footer:56px;--edge:40px;--panelW:320px}
+  :root{--bg:#EEF0F3;--ink:#0A0A0A;--acc:#FF3D00;--dim:#5C6066;--nav:64px;--header:48px;--edge:40px;--panelW:320px}
   html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:"Schibsted Grotesk",ui-sans-serif,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
-  #vp{position:fixed;top:calc(var(--nav) + var(--header));left:0;right:var(--panelW);bottom:var(--footer)}
+  #vp{position:fixed;top:calc(var(--nav) + var(--header));left:0;right:var(--panelW);bottom:0}
   canvas{display:block}
   #overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:20px 26px;box-sizing:border-box}
   #topRow{display:flex;justify-content:space-between;align-items:center}
@@ -27,8 +27,7 @@
   #back{display:flex;align-items:center;gap:8px;width:fit-content;font-family:"Geist Mono",ui-monospace,monospace;font-size:13px;letter-spacing:.04em;color:var(--ink);text-decoration:none;transition:opacity .18s ease-out}
   #back:hover{opacity:.6}
   #back svg{display:block}
-  #footer{position:fixed;z-index:3;left:0;right:0;bottom:0;height:var(--footer);box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;padding:0 var(--edge);background:var(--bg);border-top:1.5px solid var(--ink);font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;color:var(--dim)}
-  #panel{position:fixed;z-index:1;top:calc(var(--nav) + var(--header));right:0;bottom:var(--footer);width:var(--panelW);box-sizing:border-box;background:var(--bg);border-left:1.5px solid var(--ink);padding:24px;display:flex;flex-direction:column;gap:22px;overflow-y:auto}
+  #panel{position:fixed;z-index:1;top:calc(var(--nav) + var(--header));right:0;bottom:0;width:var(--panelW);box-sizing:border-box;background:var(--bg);border-left:1.5px solid var(--ink);padding:24px;display:flex;flex-direction:column;gap:22px;overflow-y:auto}
   .sec{font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;font-weight:500;letter-spacing:.14em;color:var(--dim)}
   .col{display:flex;flex-direction:column;gap:12px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -75,7 +74,7 @@
   @media (max-width:900px){
     :root{--panelW:280px}
   }
-  html.embed #panel,html.embed #overlay,html.embed #nav,html.embed #pageHeader,html.embed #footer{display:none}
+  html.embed #panel,html.embed #overlay,html.embed #nav,html.embed #pageHeader{display:none}
   html.embed #vp{inset:0}
 </style>
 <script>if(new URLSearchParams(location.search).has('embed'))document.documentElement.classList.add('embed')</script>
@@ -91,7 +90,7 @@
 <header id="pageHeader">
   <a id="back" href="/#/3d-pixels" target="_top">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-    BACK TO 3D PIXELS
+    BACK
   </a>
 </header>
 <div id="vp">
@@ -108,9 +107,9 @@
     <div class="sec">SCENE</div>
     <div class="grid2">
       <div class="scene active"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>Cloud</div>
-      <div class="scene link" onclick="location.href='./arbol3d-v3.html'"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M8 19a4 4 0 0 1-2.24-7.32A3.5 3.5 0 0 1 9 6.03V6a3 3 0 1 1 6 0v.04a3.5 3.5 0 0 1 3.24 5.65A4 4 0 0 1 16 19Z"/><path d="M12 19v3"/></svg>Tree</div>
-      <div class="scene link" onclick="location.href='./panal3d-v3.html'"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Hive</div>
-      <div class="scene link" onclick="location.href='./cigarro3d-v3.html'"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 12H2v4h16"/><path d="M22 12v4"/><path d="M7 12v4"/></svg>Cigar</div>
+      <div class="scene link" data-href="./arbol3d-v3.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M8 19a4 4 0 0 1-2.24-7.32A3.5 3.5 0 0 1 9 6.03V6a3 3 0 1 1 6 0v.04a3.5 3.5 0 0 1 3.24 5.65A4 4 0 0 1 16 19Z"/><path d="M12 19v3"/></svg>Tree</div>
+      <div class="scene link" data-href="./panal3d-v3.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Hive</div>
+      <div class="scene link" data-href="./cigarro3d-v3.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 12H2v4h16"/><path d="M22 12v4"/><path d="M7 12v4"/></svg>Cigar</div>
     </div>
   </div>
   <div class="col">
@@ -150,9 +149,6 @@
     Shuffle cloud
   </button>
 </div>
-<footer id="footer">
-  <span style="margin-left:auto">QaRt · for fun</span>
-</footer>
 <script type="module">
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -196,7 +192,7 @@ const vp = document.getElementById('vp');
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xC6C8C6);
+scene.background = new THREE.Color(0xFFFFFF);
 
 const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160);
 let vpW = 0, vpH = 0;
@@ -287,6 +283,15 @@ const lipMat = new THREE.MeshLambertMaterial({color:0xADADA6, transparent:true, 
 const lip = new THREE.Mesh(new THREE.BoxGeometry(SOIL+0.7, 0.32, SOIL+0.7), lipMat);
 lip.position.y = -1.0;
 world.add(lip);
+
+/* the floor fades to paper white whenever the camera looks down at the code —
+   driven by camera angle (not mode), so manually orbiting overhead also gets
+   the clean scan view: only the wet modules stay, drawing the QR on white */
+const WHITE = new THREE.Color(0xFFFFFF);
+const soilBase = new THREE.Color(FLOORS.cement.dry);
+const lipBase = new THREE.Color(0xADADA6);
+let whiteT = 0;
+const CV = new THREE.Vector3();
 
 // ---- permanent damp patches: varied sizes ----
 const stainGeo = new THREE.BoxGeometry(MSZ*0.94, 1, MSZ*0.94);
@@ -484,7 +489,7 @@ const hint = document.getElementById('hint');
 const HINTS = {
   scene: 'the damp patches, the grass and the rocks are already part of the code — Show QR: the cloud waters the rest',
   qrDrop: 'it rains — each drop wets a dark module of the code…',
-  qrTop: 'TOP VIEW — dry floor and wet floor draw the QR · scan it',
+  qrTop: 'TOP VIEW — the floor fades to white, the wet modules draw the QR · scan it',
   cloud: 'the scene dissolves — every block drifts free · pick a view to rebuild it'
 };
 function setMode(m){
@@ -505,6 +510,37 @@ function setMode(m){
 }
 document.querySelectorAll('.seg').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 
+/* travelling between scenes: dissolve into the free cloud first, land on the
+   next page still scattered (?arrive=cloud), then reassemble into the new
+   scene — reduced motion jumps straight across */
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let leaving = false;
+document.querySelectorAll('.scene.link').forEach(el => el.addEventListener('click', () => {
+  if (leaving) return;
+  leaving = true;
+  const dest = el.dataset.href + '?arrive=cloud';
+  if (REDUCED) { location.href = dest; return; }
+  setMode('cloud');
+  hint.textContent = 'the scene dissolves — the cloud travels to the next scene…';
+  setTimeout(() => { location.href = dest; }, 1500);
+}));
+const arriveParams = new URLSearchParams(location.search);
+if (arriveParams.get('arrive') === 'cloud') {
+  history.replaceState(null, '', location.pathname + (arriveParams.has('embed') ? '?embed' : ''));
+  if (!REDUCED) {
+    mode = 'cloud';
+    voxels.forEach(v => { v.k = 0; });
+    document.querySelectorAll('.seg').forEach(b => b.classList.toggle('active', b.dataset.mode === 'cloud'));
+    camera.position.copy(place(64, 20, 30));
+    camera.lookAt(controls.target);
+    soilMat.opacity = 0;
+    shadowMat.opacity = 0;
+    rainMat.opacity = 0;
+    hint.textContent = 'the cloud arrives — settling into the scene…';
+    setTimeout(() => setMode('scene'), 900);
+  }
+}
+
 const axes = {x:false, y:true, z:false};
 document.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => {
   axes[ch.dataset.ax] = !axes[ch.dataset.ax];
@@ -520,8 +556,8 @@ spd.addEventListener('input', () => {
 
 document.querySelectorAll('.fop').forEach(b => b.addEventListener('click', () => {
   floorKey = b.dataset.floor;
-  soilMat.color.set(FLOORS[floorKey].dry);
-  lipMat.color.set(FLOORS[floorKey].dry).multiplyScalar(0.82);
+  soilBase.set(FLOORS[floorKey].dry);
+  lipBase.set(FLOORS[floorKey].dry).multiplyScalar(0.82);
   paintStains();
   paintDropTargets();
   document.querySelectorAll('.fop').forEach(x => x.classList.remove('active'));
@@ -666,6 +702,19 @@ function step(dt){
   const soilTarget = mode !== 'cloud' ? 1 : 0;
   soilMat.opacity += (soilTarget - soilMat.opacity)*Math.min(1, dt*3);
   lipMat.opacity = soilMat.opacity;
+
+  /* overhead whitening: below 38° polar the floor starts fading, flat paper
+     white by 20° — ramped via emissive (diffuse → black, emissive → white) so
+     at full fade the pixels are exactly background white, unshaded and untinted
+     by the scene lights (a white Lambert diffuse alone renders ~80% gray) */
+  CV.copy(camera.position).sub(controls.target);
+  const polarDeg = THREE.MathUtils.radToDeg(Math.acos(THREE.MathUtils.clamp(CV.y/CV.length(), -1, 1)));
+  const whiteTarget = THREE.MathUtils.clamp((38 - polarDeg)/18, 0, 1);
+  whiteT += (whiteTarget - whiteT)*Math.min(1, dt*3);
+  soilMat.color.copy(soilBase).multiplyScalar(1 - whiteT);
+  soilMat.emissive.copy(WHITE).multiplyScalar(whiteT);
+  lipMat.color.copy(lipBase).multiplyScalar(1 - whiteT);
+  lipMat.emissive.copy(WHITE).multiplyScalar(whiteT);
   soil.visible = lip.visible = soilMat.opacity > 0.02;
 
   if (mode === 'qr') {

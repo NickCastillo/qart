@@ -12,29 +12,36 @@ export interface Piece {
    (Beatles Codes, the old 3D Pixels v2 set) has no entry point in the
    current nav per the I5uBO6/wbMwE redesign. */
 export const PIECES: Record<string, Piece> = {
+  /* the four living scenes share ONE page (studio.html + src/studio/) so
+     switching scenes morphs inside the same canvas instead of reloading;
+     the old standalone /3d/*3d-v3.html files are kept as legacy */
   arbol: {
     id: "arbol",
-    src: "/3d/arbol3d-v3.html",
+    src: "/studio.html?scene=arbol",
     name: "Tree",
     tag: "LIVING SCENE",
+    ownChrome: true,
   },
   nube: {
     id: "nube",
-    src: "/3d/nube3d-v3.html",
+    src: "/studio.html?scene=nube",
     name: "Cloud",
     tag: "LIVING SCENE",
+    ownChrome: true,
   },
   panal: {
     id: "panal",
-    src: "/3d/panal3d-v3.html",
+    src: "/studio.html?scene=panal",
     name: "Hive",
     tag: "LIVING SCENE",
+    ownChrome: true,
   },
   cigarro: {
     id: "cigarro",
-    src: "/3d/cigarro3d-v3.html",
+    src: "/studio.html?scene=cigarro",
     name: "Cigar",
     tag: "LIVING SCENE",
+    ownChrome: true,
   },
   constelacion: {
     id: "constelacion",

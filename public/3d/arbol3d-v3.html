@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#EEF0F3;--ink:#0A0A0A;--acc:#FF3D00;--dim:#5C6066;--nav:64px;--header:48px;--footer:56px;--edge:40px;--panelW:320px}
+  :root{--bg:#EEF0F3;--ink:#0A0A0A;--acc:#FF3D00;--dim:#5C6066;--nav:64px;--header:48px;--edge:40px;--panelW:320px}
   html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:"Schibsted Grotesk",ui-sans-serif,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
-  #vp{position:fixed;top:calc(var(--nav) + var(--header));left:0;right:var(--panelW);bottom:var(--footer)}
+  #vp{position:fixed;top:calc(var(--nav) + var(--header));left:0;right:var(--panelW);bottom:0}
   canvas{display:block}
   #overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:20px 26px;box-sizing:border-box}
   #topRow{display:flex;justify-content:space-between;align-items:center}
@@ -27,8 +27,7 @@
   #back{display:flex;align-items:center;gap:8px;width:fit-content;font-family:"Geist Mono",ui-monospace,monospace;font-size:13px;letter-spacing:.04em;color:var(--ink);text-decoration:none;transition:opacity .18s ease-out}
   #back:hover{opacity:.6}
   #back svg{display:block}
-  #footer{position:fixed;z-index:3;left:0;right:0;bottom:0;height:var(--footer);box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;padding:0 var(--edge);background:var(--bg);border-top:1.5px solid var(--ink);font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;color:var(--dim)}
-  #panel{position:fixed;z-index:1;top:calc(var(--nav) + var(--header));right:0;bottom:var(--footer);width:var(--panelW);box-sizing:border-box;background:var(--bg);border-left:1.5px solid var(--ink);padding:24px;display:flex;flex-direction:column;gap:22px;overflow-y:auto}
+  #panel{position:fixed;z-index:1;top:calc(var(--nav) + var(--header));right:0;bottom:0;width:var(--panelW);box-sizing:border-box;background:var(--bg);border-left:1.5px solid var(--ink);padding:24px;display:flex;flex-direction:column;gap:22px;overflow-y:auto}
   .sec{font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;font-weight:500;letter-spacing:.14em;color:var(--dim)}
   .col{display:flex;flex-direction:column;gap:12px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -75,7 +74,7 @@
   @media (max-width:900px){
     :root{--panelW:280px}
   }
-  html.embed #panel,html.embed #overlay,html.embed #nav,html.embed #pageHeader,html.embed #footer{display:none}
+  html.embed #panel,html.embed #overlay,html.embed #nav,html.embed #pageHeader{display:none}
   html.embed #vp{inset:0}
 </style>
 <script>if(new URLSearchParams(location.search).has('embed'))document.documentElement.classList.add('embed')</script>
@@ -91,7 +90,7 @@
 <header id="pageHeader">
   <a id="back" href="/#/3d-pixels" target="_top">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-    BACK TO 3D PIXELS
+    BACK
   </a>
 </header>
 <div id="vp">
@@ -107,10 +106,10 @@
   <div class="col">
     <div class="sec">SCENE</div>
     <div class="grid2">
-      <div class="scene link" onclick="location.href='./nube3d-v3.html'"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>Cloud</div>
+      <div class="scene link" data-href="./nube3d-v3.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>Cloud</div>
       <div class="scene active"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M8 19a4 4 0 0 1-2.24-7.32A3.5 3.5 0 0 1 9 6.03V6a3 3 0 1 1 6 0v.04a3.5 3.5 0 0 1 3.24 5.65A4 4 0 0 1 16 19Z"/><path d="M12 19v3"/></svg>Tree</div>
-      <div class="scene link" onclick="location.href='./panal3d-v3.html'"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Hive</div>
-      <div class="scene link" onclick="location.href='./cigarro3d-v3.html'"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 12H2v4h16"/><path d="M22 12v4"/><path d="M7 12v4"/></svg>Cigar</div>
+      <div class="scene link" data-href="./panal3d-v3.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Hive</div>
+      <div class="scene link" data-href="./cigarro3d-v3.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 12H2v4h16"/><path d="M22 12v4"/><path d="M7 12v4"/></svg>Cigar</div>
     </div>
   </div>
   <div class="col">
@@ -125,8 +124,8 @@
   <div class="col">
     <div class="sec">FLOOR</div>
     <div class="floorOpts">
-      <button class="fop active" data-floor="cement"><i style="background:#D2D2CC"></i>Cement</button>
-      <button class="fop" data-floor="grass"><i style="background:#BCCF9C"></i>Grass</button>
+      <button class="fop" data-floor="cement"><i style="background:#D2D2CC"></i>Cement</button>
+      <button class="fop active" data-floor="grass"><i style="background:#BCCF9C"></i>Grass</button>
       <button class="fop" data-floor="dirt"><i style="background:#D8C7A4"></i>Dirt</button>
     </div>
     <div class="note">dark grass and rocks are always part of the code — fallen leaves complete it over the light floor</div>
@@ -150,10 +149,7 @@
     Shuffle season
   </button>
 </div>
-<footer id="footer">
-  <span>Concept — Abdou Yaackoubi · the Sakura QR tree</span>
-  <span>QaRt · for fun</span>
-</footer>
+<!-- Concept — Abdou Yaackoubi · the Sakura QR tree -->
 <script type="module">
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -255,7 +251,18 @@ const M = new THREE.Matrix4(), C = new THREE.Color(), C2 = new THREE.Color();
 const V = new THREE.Vector3(), SC = new THREE.Vector3(1,1,1);
 const Qt = new THREE.Quaternion(), E = new THREE.Euler();
 const HSL = {h:0, s:0, l:0};
-const vividToDark = col => { col.getHSL(HSL); return new THREE.Color().setHSL(HSL.h, 0.45, 0.5); };
+/* landed/QR version of a leaf tone: keep the vivid palette color (hue and
+   saturation intact — the completed code should show the bright, clear
+   palette, not a washed-out version) and only clamp lightness, so even a
+   pale palette (cream) stays dark enough to read as modules on the white
+   overhead floor */
+const vividToQR = col => {
+  col.getHSL(HSL);
+  /* yellow/green hues carry more luminance at equal HSL lightness, so they
+     need a lower clamp to keep ~2.7:1 module contrast on the white floor */
+  const yellowish = HSL.h > 0.08 && HSL.h < 0.4;
+  return new THREE.Color().setHSL(HSL.h, Math.max(HSL.s, 0.5), Math.min(HSL.l, yellowish ? 0.44 : 0.52));
+};
 
 const voxels = [];
 function reg(mesh, i, x, y, z, baseE){
@@ -284,14 +291,23 @@ for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
 // ---- light floor, just wider than the QR (14.5) ----
 const SOIL = 17;
 const FLOORS = {cement:0xD2D2CC, grass:0xBCCF9C, dirt:0xD8C7A4};
-const soilMat = new THREE.MeshLambertMaterial({color:FLOORS.cement, transparent:true, opacity:1});
+const soilMat = new THREE.MeshLambertMaterial({color:FLOORS.grass, transparent:true, opacity:1});
 const soil = new THREE.Mesh(new THREE.BoxGeometry(SOIL, 0.85, SOIL), soilMat);
 soil.position.y = -0.425;
 world.add(soil);
 const soilRim = new THREE.Mesh(new THREE.BoxGeometry(SOIL+0.7, 0.32, SOIL+0.7),
-  new THREE.MeshLambertMaterial({color:0xB0B0A9, transparent:true, opacity:1}));
+  new THREE.MeshLambertMaterial({color:0x9EAD83, transparent:true, opacity:1}));
 soilRim.position.y = -1.0;
 world.add(soilRim);
+
+/* the floor fades to paper white whenever the camera looks down at the code —
+   driven by camera angle (not mode), so manually orbiting overhead also gets
+   the clean scan view: only the dark modules stay, drawing the QR on white */
+const WHITE = new THREE.Color(0xFFFFFF);
+const soilBase = new THREE.Color(FLOORS.grass);
+const rimBase = new THREE.Color(0x9EAD83);
+let whiteT = 0;
+const CV = new THREE.Vector3();
 
 const SUN_DIR = [0.32, 0.2];
 
@@ -374,7 +390,7 @@ const PALETTES = {
   crimson: [0xC94F2E, 0xA83C28, 0x8E2F1F, 0xD96A4A, 0xB5472A, 0x9E3322],
   spring:  [0x7FA35A, 0x5E8743, 0x9CBB6E, 0x4C7034, 0x86A952, 0x6B9447],
   cream:   [0xF2EFE6, 0xDDD8C9, 0xC9C3B2, 0xE8E2D4, 0xBDB7A6, 0xD1CBBA],
-  sky:     [0x7FA7C9, 0x5E86A8, 0x9CBFDB, 0x4C6E8E, 0x86A9C6, 0x6B93B4]
+  sakura:  [0xF2A9C4, 0xE78BB0, 0xF8C3D6, 0xD9739F, 0xEE9CBB, 0xE283AC]
 };
 let palette = PALETTES.autumn;
 
@@ -426,19 +442,22 @@ for (let i = 0; i < N_LEAF; i++) {
   const v = reg(canopy, i, px, py, pz);
   v.isLeaf = leafs[i];
 }
-const leafVivid = [], leafDark = [];
+const leafVivid = [], leafQR = [];
+let leafColorsDirty = true;
 function paintLeaves(){
   let s2 = 97;
   const r2 = () => (s2 = (s2*16807) % 2147483647) / 2147483647;
-  leafVivid.length = 0; leafDark.length = 0;
+  leafVivid.length = 0; leafQR.length = 0;
   for (let i = 0; i < N_LEAF; i++) {
     const col = new THREE.Color(palette[(r2()*palette.length)|0]);
     col.multiplyScalar(0.85 + r2()*0.3);
     leafVivid.push(col);
-    leafDark.push(vividToDark(col));
-    canopy.setColorAt(i, col);
+    leafQR.push(vividToQR(col));
   }
-  canopy.instanceColor.needsUpdate = true;
+  /* no direct instance writes here: the per-frame color pass repaints each
+     leaf from its current fall progress, so a palette change while leaves
+     are landed keeps the QR tone instead of snapping to raw canopy colors */
+  leafColorsDirty = true;
 }
 paintLeaves();
 world.add(canopy);
@@ -535,7 +554,7 @@ const hint = document.getElementById('hint');
 const HINTS = {
   scene: 'fallen leaves, dark grass and rocks all live on dark squares — press Show QR to complete the code',
   qrDrop: 'the tree releases its leaves — each one falls onto a dark module of the code…',
-  qrTop: 'TOP VIEW — fallen leaves, dark grass and rocks draw the QR · scan it',
+  qrTop: 'TOP VIEW — the floor fades to white; leaves, grass and rocks draw the QR · scan it',
   cloud: 'the scene dissolves — every block drifts free · pick a view to rebuild it'
 };
 function setMode(m){
@@ -555,6 +574,37 @@ function setMode(m){
 }
 document.querySelectorAll('.seg').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 
+/* travelling between scenes: dissolve into the free cloud first, land on the
+   next page still scattered (?arrive=cloud), then reassemble into the new
+   scene — reduced motion jumps straight across */
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let leaving = false;
+document.querySelectorAll('.scene.link').forEach(el => el.addEventListener('click', () => {
+  if (leaving) return;
+  leaving = true;
+  const dest = el.dataset.href + '?arrive=cloud';
+  if (REDUCED) { location.href = dest; return; }
+  setMode('cloud');
+  hint.textContent = 'the scene dissolves — the cloud travels to the next scene…';
+  setTimeout(() => { location.href = dest; }, 1500);
+}));
+const arriveParams = new URLSearchParams(location.search);
+if (arriveParams.get('arrive') === 'cloud') {
+  history.replaceState(null, '', location.pathname + (arriveParams.has('embed') ? '?embed' : ''));
+  if (!REDUCED) {
+    mode = 'cloud';
+    voxels.forEach(v => { v.k = 0; });
+    document.querySelectorAll('.seg').forEach(b => b.classList.toggle('active', b.dataset.mode === 'cloud'));
+    camera.position.copy(place(64, 22, 36));
+    camera.lookAt(controls.target);
+    soilMat.opacity = 0;
+    shadowMat.opacity = 0;
+    fallMat.opacity = 0;
+    hint.textContent = 'the cloud arrives — settling into the scene…';
+    setTimeout(() => setMode('scene'), 900);
+  }
+}
+
 const axes = {x:false, y:true, z:false};
 document.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => {
   axes[ch.dataset.ax] = !axes[ch.dataset.ax];
@@ -569,8 +619,8 @@ spd.addEventListener('input', () => {
 });
 
 document.querySelectorAll('.fop').forEach(b => b.addEventListener('click', () => {
-  soilMat.color.set(FLOORS[b.dataset.floor]);
-  soilRim.material.color.set(FLOORS[b.dataset.floor]).multiplyScalar(0.84);
+  soilBase.set(FLOORS[b.dataset.floor]);
+  rimBase.set(FLOORS[b.dataset.floor]).multiplyScalar(0.84);
   document.querySelectorAll('.fop').forEach(x => x.classList.remove('active'));
   b.classList.add('active');
 }));
@@ -598,7 +648,7 @@ document.getElementById('shuffle').addEventListener('click', () => {
   seed = ((Math.random()*2147483646)|0) + 1;
   for (let i = 0; i < N_LEAF; i++) {
     leafVivid[i].set(palette[(rnd()*palette.length)|0]).multiplyScalar(0.8 + rnd()*0.34);
-    leafDark[i] = vividToDark(leafVivid[i]);
+    leafQR[i] = vividToQR(leafVivid[i]);
   }
   for (let i = 0; i < N_FILL; i++) {
     C.set(palette[(rnd()*palette.length)|0]).multiplyScalar(0.85 + rnd()*0.3);
@@ -611,7 +661,6 @@ document.getElementById('shuffle').addEventListener('click', () => {
 window.__state = () => ({mode, total, leaves:N_LEAF, targets:leafTargets.length, frames:window.__fr||0,
   qAvg:+(leafs.reduce((a, l) => a+l.q, 0)/N_LEAF).toFixed(3), topFlown});
 
-let leafColorsDirty = true;
 const clock = new THREE.Clock();
 let simT = 0;
 function step(dt){
@@ -638,7 +687,7 @@ function step(dt){
       exRot = q*(1-q);
       flat = q;
       if (colorPass || Math.abs(l.q - (l.cPainted||0)) > 0.02) {
-        C2.copy(leafVivid[v.i]).lerp(leafDark[v.i], q);
+        C2.copy(leafVivid[v.i]).lerp(leafQR[v.i], q);
         canopy.setColorAt(v.i, C2);
         l.cPainted = l.q;
         colorPass = true;
@@ -684,6 +733,19 @@ function step(dt){
   soilMat.opacity += (soilTarget - soilMat.opacity)*Math.min(1, dt*3);
   soilRim.material.opacity = soilMat.opacity;
   soil.visible = soilRim.visible = soilMat.opacity > 0.02;
+
+  /* overhead whitening: below 38° polar the floor starts fading, flat paper
+     white by 20° — ramped via emissive (diffuse → black, emissive → white) so
+     at full fade the pixels are exactly background white, unshaded and untinted
+     by the scene lights (a white Lambert diffuse alone renders ~80% gray) */
+  CV.copy(camera.position).sub(controls.target);
+  const polarDeg = THREE.MathUtils.radToDeg(Math.acos(THREE.MathUtils.clamp(CV.y/CV.length(), -1, 1)));
+  const whiteTarget = THREE.MathUtils.clamp((38 - polarDeg)/18, 0, 1);
+  whiteT += (whiteTarget - whiteT)*Math.min(1, dt*3);
+  soilMat.color.copy(soilBase).multiplyScalar(1 - whiteT);
+  soilMat.emissive.copy(WHITE).multiplyScalar(whiteT);
+  soilRim.material.color.copy(rimBase).multiplyScalar(1 - whiteT);
+  soilRim.material.emissive.copy(WHITE).multiplyScalar(whiteT);
 
   const shTarget = mode === 'cloud' ? 0 : (1 - qSum/N_LEAF) * 0.15;
   shadowMat.opacity += (shTarget - shadowMat.opacity)*Math.min(1, dt*2.5);

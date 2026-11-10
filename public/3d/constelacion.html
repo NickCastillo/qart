@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#EEF0F3;--ink:#0A0A0A;--acc:#FF3D00;--dim:#5C6066;--nav:64px;--header:48px;--strip:124px;--footer:56px;--edge:40px}
+  :root{--bg:#EEF0F3;--ink:#0A0A0A;--acc:#FF3D00;--dim:#5C6066;--nav:64px;--header:48px;--strip:124px;--edge:40px}
   html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:"Schibsted Grotesk",ui-sans-serif,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
   canvas{position:fixed;inset:0;z-index:1;display:block}
   #ghost{position:fixed;z-index:0;left:calc(var(--edge) - .05em);top:calc(var(--nav) + var(--header) + 14px);font-weight:600;font-size:clamp(72px,15vw,220px);line-height:1;letter-spacing:-.05em;color:var(--acc);user-select:none;transition:opacity .3s ease-out}
@@ -28,13 +28,12 @@
   #meta{position:fixed;z-index:2;top:calc(var(--nav) + var(--header) + 20px);right:var(--edge);text-align:right;font-size:12px;line-height:1.75;letter-spacing:.03em;color:var(--dim);pointer-events:none}
   #song{color:var(--ink)}
   #song i{display:inline-block;width:8px;height:8px;margin-right:8px;background:var(--acc)}
-  #foot{position:fixed;z-index:2;left:var(--edge);bottom:calc(var(--strip) + var(--footer) + 20px);max-width:52%;font-size:12px;line-height:1.7;letter-spacing:.02em;color:var(--dim);pointer-events:none}
-  #views{position:fixed;z-index:2;right:var(--edge);bottom:calc(var(--strip) + var(--footer) + 20px);display:flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden;background:var(--bg)}
+  #foot{position:fixed;z-index:2;left:var(--edge);bottom:calc(var(--strip) + 20px);max-width:52%;font-size:12px;line-height:1.7;letter-spacing:.02em;color:var(--dim);pointer-events:none}
+  #views{position:fixed;z-index:2;right:var(--edge);bottom:calc(var(--strip) + 20px);display:flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden;background:var(--bg)}
   .vbtn{padding:13px 24px;border:0;background:transparent;color:var(--ink);font-family:inherit;font-weight:600;font-size:15px;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
   .vbtn:hover{background:#E0E3E8}
   .vbtn.on{background:var(--ink);color:#fff}
-  #dock{position:fixed;z-index:3;left:0;right:0;bottom:var(--footer);height:var(--strip);display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg);border-top:1.5px solid var(--ink)}
-  #footer{position:fixed;z-index:3;left:0;right:0;bottom:0;height:var(--footer);box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;padding:0 var(--edge);background:var(--bg);border-top:1.5px solid var(--ink);font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;color:var(--dim)}
+  #dock{position:fixed;z-index:3;left:0;right:0;bottom:0;height:var(--strip);display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg);border-top:1.5px solid var(--ink)}
   .fig{display:flex;flex-direction:column;justify-content:space-between;min-width:0;padding:15px 24px 16px;border:0;border-right:1.5px solid var(--ink);background:transparent;color:var(--ink);font-family:inherit;text-align:left;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
   .fig:first-child{padding-left:var(--edge)}
   .fig:last-child{border-right:0;padding-right:var(--edge)}
@@ -79,7 +78,7 @@
 <header id="pageHeader">
   <a id="back" href="/#index" target="_top">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-    BACK TO CONSTELLATION
+    BACK
   </a>
 </header>
 <div id="meta">
@@ -95,17 +94,14 @@
   <button class="vbtn" id="bQR">QR</button>
 </div>
 <div id="dock"></div>
-<footer id="footer">
-  <span>QaRt · for fun</span>
-</footer>
 <script type="module">
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 
 const FIGS = [
-  {key:'perro', label:'Dog', file:'./perroqr3d.html', song:'“Something” · The Beatles', accent:0xFF3D00, ghost:'Dog', figAzi:18, qrRoll:0,
+  {key:'perro', label:'Dog', file:'./perroqr3d.html', song:'“Something” · The Beatles', accent:0xFF3D00, ghost:'Dog', qrRoll:0,
    glyph:["#......","##....#","#####.#",".######",".#####.",".#..#..",".#..#.."]},
-  {key:'auto', label:'Car', file:'./qart3d.html', song:'“Help!” · The Beatles', accent:0xFF3D00, ghost:'Car', figAzi:-24, qrRoll:35,
+  {key:'auto', label:'Car', file:'./qart3d.html', song:'“Help!” · The Beatles', accent:0xFF3D00, ghost:'Car', qrRoll:35,
    glyph:[".......","..###..",".#.#.#.","#######","#######",".#...#.","......."],
    front:[
     "..................................................",
@@ -134,9 +130,9 @@ const FIGS = [
     "##################################################",
     "##################################################"
    ]},
-  {key:'cafe', label:'Coffee', file:'./cafe3d.html', song:'“Twist and Shout” · The Beatles', accent:0xFF3D00, ghost:'Coffee', figAzi:30, qrRoll:70,
+  {key:'cafe', label:'Coffee', file:'./cafe3d.html', song:'“Twist and Shout” · The Beatles', accent:0xFF3D00, ghost:'Coffee', qrRoll:70,
    glyph:["..#.#..",".......","#####..","#####.#","#####.#","#####..",".###..."]},
-  {key:'react', label:'React', file:'./react3d.html', song:'“Now and Then” · The Beatles', accent:0xFF3D00, ghost:'React', figAzi:-14, qrRoll:-40,
+  {key:'react', label:'React', file:'./react3d.html', song:'“Now and Then” · The Beatles', accent:0xFF3D00, ghost:'React', qrRoll:-40,
    glyph:["..###..",".#...#.","#..#..#","#.###.#","#..#..#",".#...#.","..###.."]}
 ];
 
@@ -221,20 +217,28 @@ const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true, preserveDr
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 const scene = new THREE.Scene();
 
-const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 600);
+/* near-telephoto lens, same as the piece pages (fov 9) — the cloud is ~15
+   units deep, so a wide lens up close smears the blocks with parallax and the
+   figure never resolves; a long lens from far keeps the projection nearly
+   orthographic, which is what makes the face-on view read as the drawing */
+const camera = new THREE.PerspectiveCamera(9, 1, 0.2, 1600);
 const pageHeader = document.getElementById('pageHeader');
 let vpW = 0, vpH = 0;
+/* fraction of the window height actually visible between the fixed page
+   chrome (nav + header above, dock below) — fit math uses it so the
+   framed object clears the bars instead of just the full frustum */
+let bandFrac = 0.62;
 function syncChromeShift(){
   const cs = getComputedStyle(document.documentElement);
   const nav = parseFloat(cs.getPropertyValue('--nav'));
   const strip = parseFloat(cs.getPropertyValue('--strip'));
-  const footer = parseFloat(cs.getPropertyValue('--footer'));
   const topChrome = nav + pageHeader.getBoundingClientRect().height;
-  const bottomChrome = strip + footer;
+  const bottomChrome = strip;
   /* camera.setViewOffset only skews the frustum when its window is smaller
      than the declared full size; with both equal (as here) it's a no-op, so
      the chrome asymmetry is compensated with a plain CSS shift instead */
   renderer.domElement.style.transform = `translateY(${(topChrome - bottomChrome)/2}px)`;
+  bandFrac = Math.max(0.3, (innerHeight - topChrome - bottomChrome)/innerHeight);
 }
 function sizeViewport(){
   const w = innerWidth || 1200, h = innerHeight || 760;
@@ -253,56 +257,64 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, 0);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
-controls.minDistance = 0.3;
-controls.maxDistance = 160;
+controls.minDistance = 1;
+controls.maxDistance = 545;
 controls.zoomSpeed = 1.15;
 
+const FOV_HALF = THREE.MathUtils.degToRad(4.5);
 const FIT_WIDTH = 23;
 const place = (polarDeg, aziDeg, wanted) => {
-  const dist = Math.max(wanted, FIT_WIDTH/(2*Math.tan(THREE.MathUtils.degToRad(15))*camera.aspect));
+  const dist = Math.max(wanted, FIT_WIDTH/(2*Math.tan(FOV_HALF)*camera.aspect));
   const p = THREE.MathUtils.degToRad(polarDeg), a = THREE.MathUtils.degToRad(aziDeg);
   return new THREE.Vector3(dist*Math.sin(p)*Math.sin(a), dist*Math.cos(p), dist*Math.sin(p)*Math.cos(a));
 };
-camera.position.copy(place(74, 28, 44));
+camera.position.copy(place(74, 28, 150));
 camera.lookAt(0, 0, 0);
 const UP_Y = new THREE.Vector3(0, 1, 0);
 const upFor = (mode, f) => mode === 'fig' ? UP_Y.clone()
   : new THREE.Vector3(Math.sin(THREE.MathUtils.degToRad(f.qrRoll)), 0, Math.cos(THREE.MathUtils.degToRad(f.qrRoll)));
 let tween = null;
-/* idle auto-rotation sways within this arc of the figure's own calibrated
-   azimuth, rather than spinning freely — keeps it from ever turning to the
-   worst-case diagonal angle, where a wide figure would overflow the frame */
-const ROT_SWAY = THREE.MathUtils.degToRad(18);
+/* idle auto-rotation sways within this small arc around dead-front — the
+   figure only resolves face-on (the blocks sit at QR depths, so any real
+   turn smears the silhouette sideways); a few degrees keeps the cloud alive
+   without ever breaking the read */
+const ROT_SWAY = THREE.MathUtils.degToRad(6);
 let baseAzi = 0, swayDir = 1;
 const flyTo = (p, a, d, up) => {
   tween = {s:camera.position.clone(), e:place(p, a, d), upS:camera.up.clone(), upE:up, t:0};
   baseAzi = THREE.MathUtils.degToRad(a); swayDir = 1;
 };
-window.setView = (p, a, d = 40) => { camera.position.copy(place(p, a, d)); camera.lookAt(0, 0, 0); };
-/* figures differ a lot in drawn height, so each gets its own distance scaled
-   from its height, calibrated so the reference figure (dog) keeps the
-   original, already-good d:40 framing — but a wide/flat figure (car) can't
-   be fit by height alone on a narrower window, so the width also gets its
-   own required distance (using the camera's current aspect) and the larger
-   of the two wins. The width term uses the apparent width at the edge of the
-   auto-rotation sway (ROT_SWAY), not just the face-on width — the QR data
-   gives the cloud real depth, so turning exposes some of it as extra width,
-   and a bare safety floor (not the aesthetic HEIGHT_MARGIN) is enough since
-   it only has to cover that bounded turn, not a full 45° worst case. */
-const FOV_HALF = THREE.MathUtils.degToRad(15);
-const REF_FIG = FIGS.find(x => x.key === 'perro');
-const HEIGHT_MARGIN = 40*Math.tan(FOV_HALF)/(REF_FIG.figH/2);
+window.setView = (p, a, d = 140) => { camera.position.copy(place(p, a, d)); camera.lookAt(0, 0, 0); };
+/* each view fits its subject into the visible band between the page bars,
+   per figure and per viewport: the height term fills a fixed fraction of the
+   band, and the width term (using the camera's current aspect) covers what a
+   narrow window can't fit by height alone — the larger distance wins. The
+   figure's width uses the apparent width at the edge of the idle sway, since
+   turning exposes some of the cloud's QR depth as extra width; the QR's
+   footprint is its flattened rectangle rotated on screen by the per-figure
+   roll of the camera's up vector. */
+const FIG_FRAC = 0.72;
+const QR_FRAC = 0.86;
 const WIDTH_MARGIN = 1.08;
 const fitDist = f => {
   const swayWidth = f.figW*Math.cos(ROT_SWAY) + f.figD*Math.sin(ROT_SWAY);
   return Math.max(
-    (f.figH/2*HEIGHT_MARGIN)/Math.tan(FOV_HALF),
+    (f.figH/2)/(Math.tan(FOV_HALF)*bandFrac*FIG_FRAC),
     (swayWidth/2*WIDTH_MARGIN)/(Math.tan(FOV_HALF)*camera.aspect),
   );
 };
+const qrFitDist = f => {
+  const r = THREE.MathUtils.degToRad(f.qrRoll);
+  const c = Math.abs(Math.cos(r)), s = Math.abs(Math.sin(r));
+  const halfW = (f.figW*c + f.figD*s)/2, halfH = (f.figW*s + f.figD*c)/2;
+  return Math.max(
+    halfH/(Math.tan(FOV_HALF)*bandFrac*QR_FRAC),
+    (halfW*WIDTH_MARGIN)/(Math.tan(FOV_HALF)*camera.aspect),
+  );
+};
 const viewTarget = (mode, f) => mode === 'fig'
-  ? {p:90, a:f.figAzi, d:fitDist(f)}
-  : {p:4, a:0, d:76};
+  ? {p:90, a:0, d:fitDist(f)}
+  : {p:2, a:0, d:qrFitDist(f)};
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x5A5D63, 1.25));
 const key = new THREE.DirectionalLight(0xffffff, 0.75);
@@ -313,7 +325,7 @@ scene.add(key);
 const dustGeo = new THREE.BufferGeometry();
 const dustPos = new Float32Array(130*3);
 for (let i = 0; i < 130; i++) {
-  const a = rnd()*6.283, b = Math.acos(rnd()*2-1), r = 55 + rnd()*70;
+  const a = rnd()*6.283, b = Math.acos(rnd()*2-1), r = 190 + rnd()*240;
   dustPos[i*3] = r*Math.sin(b)*Math.cos(a);
   dustPos[i*3+1] = r*Math.cos(b);
   dustPos[i*3+2] = r*Math.sin(b)*Math.sin(a);
@@ -374,9 +386,13 @@ document.getElementById('count').textContent = String(N).replace(/\B(?=(\d{3})+$
 hint.textContent = 'one cloud of blocks — pick a figure and watch it reorder itself';
 
 function selectFig(idx){
-  if (idx === figIdx) return;
-  figIdx = idx;
   const f = FIGS[idx];
+  if (idx === figIdx) { // already active — still fly back to its framed view
+    const t = viewTarget(view, f);
+    flyTo(t.p, t.a, t.d, upFor(view, f));
+    return;
+  }
+  figIdx = idx;
   figBtns.forEach((b, i) => { b.classList.toggle('on', i === idx); b.setAttribute('aria-pressed', String(i === idx)); });
   ghost.style.opacity = 0;
   setTimeout(() => { ghost.textContent = f.ghost; ghost.style.opacity = ''; }, 180);

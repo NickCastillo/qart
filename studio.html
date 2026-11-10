@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Living Scene Studio · QaRt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#EEF0F3;--ink:#0A0A0A;--acc:#FF3D00;--dim:#5C6066;--nav:64px;--header:48px;--edge:40px;--panelW:320px}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:"Schibsted Grotesk",ui-sans-serif,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+  #vp{position:fixed;top:calc(var(--nav) + var(--header));left:0;right:var(--panelW);bottom:0}
+  canvas{display:block}
+  #overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:20px 26px;box-sizing:border-box}
+  #topRow{display:flex;justify-content:space-between;align-items:center}
+  #sceneLabel{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.14em;color:var(--dim)}
+  #scanChip{display:flex;gap:8px;align-items:center;padding:7px 14px;border:1px solid var(--ink);border-radius:99px;background:var(--bg);font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;color:var(--ink)}
+  #scanDot{width:6px;height:6px;border-radius:99px;background:var(--acc)}
+  #hint{font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;color:var(--dim);text-align:center;letter-spacing:.02em;transition:color .4s}
+  #nav{position:fixed;z-index:3;top:0;left:0;right:0;height:var(--nav);box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;padding:0 var(--edge);background:var(--bg);border-bottom:1.5px solid var(--ink)}
+  #logo{display:inline-flex;align-items:baseline;font-weight:700;font-size:30px;line-height:1;letter-spacing:-.01em;color:var(--ink);text-decoration:none}
+  #logo i{font-style:normal;font-size:19px}
+  #navR{display:flex;gap:32px}
+  #navR a{font-weight:500;font-size:16px;color:var(--ink);text-decoration:none}
+  #navR a:hover{color:var(--acc)}
+  #pageHeader{position:fixed;z-index:2;top:var(--nav);left:0;right:0;height:var(--header);box-sizing:border-box;display:flex;align-items:center;padding:0 var(--edge);background:var(--bg)}
+  #back{display:flex;align-items:center;gap:8px;width:fit-content;font-family:"Geist Mono",ui-monospace,monospace;font-size:13px;letter-spacing:.04em;color:var(--ink);text-decoration:none;transition:opacity .18s ease-out}
+  #back:hover{opacity:.6}
+  #back svg{display:block}
+  #panel{position:fixed;z-index:1;top:calc(var(--nav) + var(--header));right:0;bottom:0;width:var(--panelW);box-sizing:border-box;background:var(--bg);border-left:1.5px solid var(--ink);padding:24px;display:flex;flex-direction:column;gap:22px;overflow-y:auto}
+  .sec{font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;font-weight:500;letter-spacing:.14em;color:var(--dim)}
+  .col{display:flex;flex-direction:column;gap:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .scene{display:flex;flex-direction:column;gap:8px;align-items:center;padding:14px 10px;border-radius:4px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);font-size:12px;cursor:default;transition:background .18s ease-out,color .18s ease-out}
+  .scene svg{width:22px;height:22px;stroke:var(--ink)}
+  .scene.active{background:var(--ink);color:var(--bg);font-weight:600}
+  .scene.active svg{stroke:var(--acc)}
+  .scene.link{cursor:pointer}
+  .scene.link:hover{background:#E0E3E8}
+  .segmented{display:flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden}
+  .seg{flex:1;padding:10px 8px;border:0;background:transparent;color:var(--ink);font-family:"Schibsted Grotesk";font-size:12px;font-weight:600;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
+  .seg:hover{background:#E0E3E8}
+  .seg.active{background:var(--ink);color:var(--bg)}
+  .floorOpts{display:flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden}
+  .fop{flex:1;padding:10px 12px;border:0;border-right:1.5px solid var(--ink);background:transparent;color:var(--ink);font-family:"Schibsted Grotesk";font-size:12px;font-weight:600;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
+  .fop:last-child{border-right:0}
+  .fop i{display:none}
+  .fop:hover{background:#E0E3E8}
+  .fop.active{background:var(--ink);color:var(--bg)}
+  .note{font-size:12px;line-height:1.5;color:var(--dim)}
+  .swatches{display:flex;gap:10px}
+  .psw{width:26px;height:26px;border-radius:99px;border:2px solid transparent;padding:0;display:block;cursor:pointer;background:transparent;overflow:hidden}
+  .psw.active{border-color:var(--ink)}
+  .psw i{width:100%;height:100%;border-radius:inherit;display:block}
+  .chips{display:flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden}
+  .chip{flex:1;padding:8px 12px;border:0;border-right:1.5px solid var(--ink);background:transparent;color:var(--ink);font-family:"Schibsted Grotesk";font-size:12px;font-weight:600;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
+  .chip:last-child{border-right:0}
+  .chip:hover{background:#E0E3E8}
+  .chip.on{background:var(--ink);color:var(--bg)}
+  .srow{display:flex;justify-content:space-between;font-size:12px}
+  .srow b{font-weight:400;color:var(--ink)}
+  .srow span{color:var(--dim)}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:14px;background:transparent}
+  input[type=range]::-webkit-slider-runnable-track{height:2px;border-radius:2px;background:linear-gradient(90deg,var(--acc) var(--fill,30%),rgba(10,10,10,.2) var(--fill,30%))}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;margin-top:-6px;width:14px;height:14px;border-radius:99px;background:var(--ink);border:0}
+  input[type=range]::-moz-range-track{height:2px;border-radius:2px;background:rgba(10,10,10,.2)}
+  input[type=range]::-moz-range-progress{height:2px;border-radius:2px;background:var(--acc)}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:99px;background:var(--ink);border:0}
+  #shuffle{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 16px;border-radius:4px;border:0;background:var(--ink);color:var(--bg);font-family:"Schibsted Grotesk";font-size:14px;font-weight:600;cursor:pointer;transition:opacity .18s ease-out}
+  #shuffle:hover{opacity:.82}
+  #shuffle svg{stroke:var(--acc)}
+  @media (max-width:900px){
+    :root{--panelW:280px}
+  }
+  html.embed #panel,html.embed #overlay,html.embed #nav,html.embed #pageHeader{display:none}
+  html.embed #vp{inset:0}
+</style>
+<script>if(new URLSearchParams(location.search).has('embed'))document.documentElement.classList.add('embed')</script>
+</head>
+<body>
+<nav id="nav">
+  <a id="logo" href="/#top" target="_top" aria-label="QaRt home">Q<i>a</i>R<i>t</i></a>
+  <div id="navR"><a href="/#index" target="_top">Projects</a><a href="/#why" target="_top">Why</a></div>
+</nav>
+<header id="pageHeader">
+  <a id="back" href="/#/3d-pixels" target="_top">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+    BACK
+  </a>
+</header>
+<div id="vp">
+  <div id="overlay">
+    <div id="topRow">
+      <div id="sceneLabel"></div>
+      <div id="scanChip"><span id="scanDot"></span><span>100% scannable from above</span></div>
+    </div>
+    <div id="hint"></div>
+  </div>
+</div>
+<div id="panel">
+  <div class="col">
+    <div class="sec">SCENE</div>
+    <div class="grid2" id="dock"></div>
+  </div>
+  <div class="col">
+    <div class="sec">VIEW</div>
+    <div class="segmented">
+      <button class="seg active" data-mode="scene">Show scene</button>
+      <button class="seg" data-mode="qr">Show QR</button>
+      <button class="seg" data-mode="cloud">Show cloud</button>
+    </div>
+    <div class="note" id="viewNote"></div>
+  </div>
+  <div class="col">
+    <div class="sec" id="floorsTitle">FLOOR</div>
+    <div class="floorOpts" id="floorOpts"></div>
+    <div class="note" id="floorNote"></div>
+  </div>
+  <div class="col">
+    <div class="sec" id="swatchTitle"></div>
+    <div class="swatches" id="swatches"></div>
+  </div>
+  <div class="col">
+    <div class="sec">ROTATION</div>
+    <div class="chips">
+      <button class="chip" data-ax="x">X</button>
+      <button class="chip" data-ax="y">Y</button>
+      <button class="chip" data-ax="z">Z</button>
+    </div>
+    <div class="srow"><b>Speed</b><span id="spdV">0.6×</span></div>
+    <input type="range" id="spd" min="0" max="2" step="0.1" value="0.6" style="--fill:30%">
+  </div>
+  <button id="shuffle">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.4c1.3 0 2.5.6 3.3 1.7l6.1 8.6c.7 1.1 2 1.7 3.3 1.7H22"/><path d="m18 14 4 4-4 4"/></svg>
+    <span id="shuffleLabel">Shuffle</span>
+  </button>
+</div>
+<script type="module" src="/src/studio/main.ts"></script>
+</body>
+</html>
