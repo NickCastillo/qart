@@ -224,6 +224,12 @@
         ],
         "createdAt": "2026-11-08T00:24:33.918Z",
         "reason": "matches the sitewide type system (Geist Mono + Schibsted Grotesk) already established in root index.html and public/3d/constelacion.html; same rationale as the existing constelacion.html exception"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist mono",
+        "createdAt": "2026-11-10T13:08:45.210Z",
+        "reason": "Project design system: Geist Mono is the established mono face across index.html, all 13 pieces and the shell — studio.html must match the existing QaRt chrome"
       }
     ]
   }
