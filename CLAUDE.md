@@ -39,8 +39,12 @@ is unless asked to fix it.
 1. **QR payloads and grids**: changing what a QR encodes, or hand-editing grid rows.
 2. **Constellation scrape contract**: `constelacion.html` regex-scrapes
    `const QR = [` / `const FRONT = [` from `perroqr3d/qart3d/cafe3d/react3d.html` at runtime.
-   Those consts' names, formatting, and row formats are load-bearing across files.
-3. **Finder squares stay solid dark** in every QR rendering (scannability).
+   Those consts' names, formatting, and row formats are load-bearing across files. The QRetro
+   games read their shared code list from `public/qretro/codes.json` (grids generated with
+   `qrcode-generator` from the YouTube payload URLs stored there).
+3. **Finder squares stay solid dark** in every scannable QR rendering. (The QRetro game
+   animations are stylized builds — Tetris colors its settled pieces — and are not scan
+   surfaces; the pieces' QR views are.)
 4. **Seeded RNG call order** inside a piece or studio scene module: adding/removing/
    reordering `rnd()` calls silently reshuffles layouts. Do it only as a deliberate
    layout change.

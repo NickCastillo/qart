@@ -568,6 +568,99 @@ body.loaded .rise {
   color: var(--dim);
 }
 
+/* ---------- QRetro Games ---------- */
+
+.qretro-animations {
+  padding: 56px var(--pad-x) 72px;
+}
+
+/* the label row spans exactly the two-card group, whatever the gap */
+.qretro-anims-inner {
+  width: fit-content;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.qretro-label-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.qretro-games {
+  display: flex;
+  justify-content: center;
+  gap: clamp(40px, 20vw, 294px);
+}
+
+.qretro-game {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(322px, 86vw);
+}
+
+.qretro-screen {
+  aspect-ratio: 322 / 332;
+  background: #07070a;
+  overflow: hidden;
+}
+
+/* the games play themselves — the iframe stays inert so the page keeps
+   scrolling naturally over it */
+.qretro-screen iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none;
+}
+
+.qretro-game-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qretro-game-name {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.qretro-game-name h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.qretro-game-name span {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.qretro-game p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--dim);
+}
+
+@media (max-width: 760px) {
+  .qretro-games {
+    flex-direction: column;
+    align-items: center;
+    gap: 48px;
+  }
+}
+
 .index.studio-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -137,7 +137,8 @@ export const PROJECTS: IndexProject[] = [
     meta: "2 GAMES · ANIMATION",
     description:
       "Two classics that build a QR: in Tetris the pieces fall into place, in Snake five snakes eat coins until they crash.",
-    linkLabel: "Coming soon",
+    linkLabel: "Open",
+    href: "#/qretro",
     states: [
       { src: "/images/qretro-empieza.png", alt: "QRetro Games starting state" },
       {

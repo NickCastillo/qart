@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>QR Tetris</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#07070A;display:flex;flex-direction:column;
+            align-items:center;justify-content:center;gap:24px;overflow:hidden}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+/* both games build the same list of codes — each one opens a YouTube video */
+const CODES = await (await fetch('/qretro/codes.json')).json();
+const QRS = CODES.map(c => c.qr);
+const N = QRS[0].length, NQ = QRS.length;
+
+/* las 7 piezas con todas sus rotaciones, y la paleta de Tetris */
+const ORI = {
+  I: [[[0,0],[1,0],[2,0],[3,0]], [[0,0],[0,1],[0,2],[0,3]]],
+  O: [[[0,0],[1,0],[0,1],[1,1]]],
+  T: [[[1,0],[0,1],[1,1],[2,1]], [[0,0],[0,1],[1,1],[0,2]],
+      [[0,0],[1,0],[2,0],[1,1]], [[1,0],[0,1],[1,1],[1,2]]],
+  S: [[[1,0],[2,0],[0,1],[1,1]], [[0,0],[0,1],[1,1],[1,2]]],
+  Z: [[[0,0],[1,0],[1,1],[2,1]], [[1,0],[0,1],[1,1],[0,2]]],
+  J: [[[0,0],[0,1],[1,1],[2,1]], [[0,0],[1,0],[0,1],[0,2]],
+      [[0,0],[1,0],[2,0],[2,1]], [[1,0],[1,1],[0,2],[1,2]]],
+  L: [[[2,0],[0,1],[1,1],[2,1]], [[0,0],[0,1],[0,2],[1,2]],
+      [[0,0],[1,0],[2,0],[0,1]], [[0,0],[1,0],[1,1],[1,2]]],
+};
+const COL = {I:'#00E5EE', O:'#F5D800', T:'#B14BE0', S:'#2ED84B', Z:'#ED2B2B', J:'#2A59F0', L:'#F5A020'};
+const ALL = [];
+for (const k of Object.keys(ORI)) for (const o of ORI[k]) ALL.push({k, o});
+
+let seed = 1;
+const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
+const clamp01 = p => p < 0 ? 0 : p > 1 ? 1 : p;
+const inQuad = p => p*p;
+const outQuint = p => 1 - Math.pow(1-p, 5);
+
+/* Cada pieza que cae es un tetrominó entero. Se eligen colocaciones que cubran
+   el máximo de módulos del código; las celdas que caen fuera del código se
+   queman al aterrizar. Así nunca cae una forma que no sea de Tetris.        */
+function planOnce(g, sv){
+  const LOB = -2, HIB = N + 1;
+  const key = (c, r) => (r + 4)*64 + (c + 4);
+  const used = new Set();
+  const out = [];
+  seed = sv;
+  for (let r = N-1; r >= 0; r--) for (let c = 0; c < N; c++){
+    if (g[r][c] !== 'Q' || used.has(key(c, r))) continue;
+    let best = null, bestScore = -1e9;
+    for (const {k, o} of ALL) for (let ki = 0; ki < o.length; ki++){
+      const ox = c - o[ki][0], oy = r - o[ki][1];
+      let score = 0, ok = true;
+      const cells = [];
+      for (const [dx, dy] of o){
+        const cc = ox + dx, rr = oy + dy;
+        if (cc < LOB || rr < LOB || cc > HIB || rr > HIB || used.has(key(cc, rr))) { ok = false; break; }
+        const inb = cc >= 0 && rr >= 0 && cc < N && rr < N;
+        const keep = inb && g[rr][cc] === 'Q';
+        score += keep ? 10 : (inb ? -1 : -2);
+        cells.push({c:cc, r:rr, keep});
+      }
+      if (!ok) continue;
+      score += rnd()*0.9;
+      if (score > bestScore) { bestScore = score; best = {k, cells}; }
+    }
+    if (!best) { out.push({type:'frag', col:COL.O, cells:[{c, r, keep:true}]}); used.add(key(c, r)); continue; }
+    for (const m of best.cells) used.add(key(m.c, m.r));
+    out.push({type:best.k, col:COL[best.k], cells:best.cells});
+  }
+  let frags = 0, burn = 0;
+  for (const p of out){ if (p.type === 'frag') frags++; for (const m of p.cells) if (!m.keep) burn++; }
+  return {pieces: out, frags, burn};
+}
+function plan(g){
+  let best = null;
+  for (let s = 0; s < 14; s++){
+    const r = planOnce(g, 17 + s*7919);
+    if (!best || r.frags < best.frags || (r.frags === best.frags && r.burn < best.burn)) best = r;
+  }
+  return best;
+}
+
+/* ------------------------------ escenario -------------------------------- */
+/* the board fills most of the (already compact) embed */
+const PADC = 1;
+const CELL = Math.max(6, Math.floor(Math.min(innerWidth, innerHeight)*0.88/(N + PADC*2)));
+const S = (N + PADC*2)*CELL;
+const cv = document.getElementById('c');
+const dpr = Math.min(devicePixelRatio, 2);
+cv.width = S*dpr; cv.height = S*dpr; cv.style.width = S+'px'; cv.style.height = S+'px';
+const ctx = cv.getContext('2d');
+ctx.scale(dpr, dpr);
+const W0 = PADC*CELL, W1 = W0 + N*CELL;
+const B = Math.max(2, Math.round(CELL*0.115));
+const px = c => W0 + c*CELL, py = r => W0 + r*CELL;
+
+function well(){
+  ctx.fillStyle = '#07070A'; ctx.fillRect(0, 0, S, S);
+  ctx.fillStyle = '#0C0C12'; ctx.fillRect(W0, W0, N*CELL, N*CELL);
+  ctx.strokeStyle = '#14141D'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 1; i < N; i++){
+    ctx.moveTo(W0 + i*CELL + .5, W0); ctx.lineTo(W0 + i*CELL + .5, W1);
+    ctx.moveTo(W0, W0 + i*CELL + .5); ctx.lineTo(W1, W0 + i*CELL + .5);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = '#262633'; ctx.lineWidth = 2;
+  ctx.strokeRect(W0 - 1, W0 - 1, N*CELL + 2, N*CELL + 2);
+}
+function blk(x, y, col, flash, sc, al){
+  sc = sc === undefined ? 1 : sc; al = al === undefined ? 1 : al;
+  if (sc <= 0.02 || al <= 0.02) return;
+  const s = CELL*sc, ox = x + (CELL - s)/2, oy = y + (CELL - s)/2, b = Math.max(1, B*sc);
+  if (al < 1) ctx.globalAlpha = al;
+  ctx.fillStyle = col; ctx.fillRect(ox, oy, s, s);
+  ctx.fillStyle = 'rgba(255,255,255,.30)'; ctx.fillRect(ox, oy, s, b); ctx.fillRect(ox, oy, b, s);
+  ctx.fillStyle = 'rgba(0,0,0,.34)'; ctx.fillRect(ox, oy + s - b, s, b); ctx.fillRect(ox + s - b, oy, b, s);
+  ctx.fillStyle = 'rgba(255,255,255,.42)'; ctx.fillRect(ox + b*1.7, oy + b*1.7, b*1.5, b*1.5);
+  if (flash > 0.004){ ctx.fillStyle = 'rgba(255,255,255,' + flash + ')'; ctx.fillRect(ox, oy, s, s); }
+  if (al < 1) ctx.globalAlpha = 1;
+}
+
+/* ------------------------------ animación ------------------------------ */
+const BUILD = 1.9, HOLD = 1.7, WIPE = 1.0, SQ = 0.12, BURN = 0.22;
+let qi = 0, t = 0, pieces = [], info = null;
+const PLANS = QRS.map(plan);
+function load(){
+  const r = PLANS[qi];
+  info = {frags: r.frags, burn: r.burn};
+  pieces = r.pieces;
+  for (const p of pieces){
+    const rows = p.cells.map(m => m.r), cols = p.cells.map(m => m.c);
+    const keep = p.cells.filter(m => m.keep).map(m => m.r);
+    p.top = Math.min(...rows);
+    p.bot = Math.max(...rows);
+    p.key = Math.max(...keep);
+    p.c0 = Math.min(...cols); p.c1 = Math.max(...cols) + 1;
+    p.cx = (p.c0 + p.c1)/2;
+    const tops = {};
+    for (const m of p.cells) if (tops[m.c] === undefined || m.r < tops[m.c]) tops[m.c] = m.r;
+    p.tops = Object.keys(tops).map(c => ({c: +c, r: tops[c]}));
+  }
+  pieces.sort((a, b) => b.key - a.key || a.cx - b.cx);
+  seed = 991 + qi*37;
+  const n = pieces.length, spread = BUILD - 0.64;
+  pieces.forEach((p, i) => {
+    p.rise = (3.0 + rnd()*4.2 + Math.max(p.top, 0))*CELL;
+    p.dur  = 0.30*Math.sqrt(Math.max(p.rise/CELL, 3)/15);
+    p.at   = (i/n)*spread;
+  });
+}
+load();
+
+function frame(){
+  well();
+  ctx.save();
+  ctx.beginPath(); ctx.rect(W0, W0, N*CELL, N*CELL); ctx.clip();
+  if (t < BUILD + HOLD) {
+    for (const p of pieces){
+      const age = t - p.at;
+      if (age < 0) continue;
+      let dy = 0, k = 0, flash = 0;
+      if (age < p.dur) {
+        const e = inQuad(age/p.dur), sp = 1 - e;
+        dy = -sp*p.rise;
+        if (sp > 0.05) {
+          const h = CELL*5.0*sp;
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          for (const u of p.tops){
+            const gy = py(u.r) + dy;
+            const g = ctx.createLinearGradient(0, gy - h, 0, gy);
+            g.addColorStop(0, p.col + '00'); g.addColorStop(1, p.col + '44');
+            ctx.fillStyle = g; ctx.fillRect(px(u.c), gy - h, CELL, h);
+          }
+          ctx.restore();
+        }
+      } else if (age < p.dur + SQ) {
+        k = 1 - outQuint((age - p.dur)/SQ);
+        flash = k*0.5;
+      }
+      const burn = clamp01((age - p.dur - SQ)/BURN);
+      const by = py(p.bot) + CELL + dy, bx = W0 + p.cx*CELL;
+      ctx.save();
+      ctx.translate(bx, by); ctx.scale(1 + 0.11*k, 1 - 0.24*k); ctx.translate(-bx, -by);
+      for (const m of p.cells){
+        if (m.keep) blk(px(m.c), py(m.r) + dy, p.col, flash);
+        else if (burn < 1) blk(px(m.c), py(m.r) + dy, p.col,
+                              Math.max(flash, (1 - burn)*0.8), 1 - 0.9*Math.pow(burn, 0.55), 1 - burn);
+      }
+      ctx.restore();
+    }
+  } else {
+    const p0 = (t - BUILD - HOLD)/WIPE;
+    const sink = (0.2*p0*p0 + 0.8*p0)*(N + 3);
+    for (const p of pieces) for (const m of p.cells){
+      if (!m.keep) continue;
+      const rr = m.r + sink;
+      if (rr > N + 1.4) continue;
+      const edge = clamp01(1 - Math.abs(rr - (N - 0.5))*0.8);
+      blk(px(m.c), py(m.r) + sink*CELL, p.col, edge*0.92);
+    }
+  }
+  ctx.restore();
+}
+
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (REDUCE) {
+  const paint = () => {
+    well();
+    ctx.save(); ctx.beginPath(); ctx.rect(W0, W0, N*CELL, N*CELL); ctx.clip();
+    for (const p of pieces) for (const m of p.cells) if (m.keep) blk(px(m.c), py(m.r), p.col, 0);
+    ctx.restore();
+  };
+  paint();
+  setInterval(() => { qi = (qi+1) % NQ; load(); paint(); }, 3000);
+} else {
+  let last = performance.now();
+  const loop = now => {
+    requestAnimationFrame(loop);
+    t += Math.min((now - last)/1000, 0.05);
+    last = now;
+    if (t >= BUILD + HOLD + WIPE) { t -= BUILD + HOLD + WIPE; qi = (qi+1) % NQ; load(); }
+    frame();
+    window.__fr = (window.__fr || 0) + 1;
+  };
+  requestAnimationFrame(loop);
+}
+
+window.__frame = frame;
+window.__stats = () => {
+  const by = {};
+  let keep = 0, burn = 0;
+  for (const p of pieces){ by[p.type] = (by[p.type]||0) + 1; for (const m of p.cells) m.keep ? keep++ : burn++; }
+  return {code: CODES[qi].id, pieces: pieces.length, keep, burn, frags: info.frags, byType: by, t: +t.toFixed(2)};
+};
+window.__seek = s => {
+  t = 0; qi = 0; load();
+  const d = 1/60;
+  for (let i = 0; i < Math.round(s/d); i++){
+    t += d;
+    if (t >= BUILD + HOLD + WIPE) { t -= BUILD + HOLD + WIPE; qi = (qi+1) % NQ; load(); }
+  }
+  frame();
+  return +t.toFixed(2);
+};
+window.__strip = (times, w = 230) => {
+  document.getElementById('__s')?.remove();
+  const wrap = document.createElement('div');
+  wrap.id = '__s';
+  wrap.style.cssText = 'position:fixed;left:0;top:0;z-index:9;background:#07070A;display:flex;gap:6px;padding:6px';
+  document.body.appendChild(wrap);
+  for (const at of times){
+    __seek(at);
+    const cell = document.createElement('div');
+    cell.style.cssText = 'flex:none;text-align:center';
+    const tag = document.createElement('div');
+    tag.textContent = at.toFixed(2) + 's';
+    tag.style.cssText = 'font:11px Inter;color:#8A8AA0;padding:3px 0';
+    const img = document.createElement('img');
+    img.src = cv.toDataURL(); img.width = w; img.height = w; img.style.display = 'block';
+    cell.appendChild(tag); cell.appendChild(img); wrap.appendChild(cell);
+  }
+  return 'strip';
+};
+</script>
+</body>
+</html>

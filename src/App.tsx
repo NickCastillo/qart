@@ -5,10 +5,11 @@ import { IndexSection } from './components/IndexSection.tsx'
 import { Why } from './components/Why.tsx'
 import { Footer } from './components/Footer.tsx'
 import { StudioIndex } from './components/StudioIndex.tsx'
+import { QRetro } from './components/QRetro.tsx'
 import { Piece } from './components/Piece.tsx'
 import { PIECES } from './pieces.ts'
 
-type View = { kind: 'home' } | { kind: 'studio' } | { kind: 'piece'; id: string }
+type View = { kind: 'home' } | { kind: 'studio' } | { kind: 'qretro' } | { kind: 'piece'; id: string }
 
 const ANCHORS = ['#top', '#index', '#why']
 
@@ -16,6 +17,7 @@ function parseView(hash: string): View {
   const piece = hash.match(/^#\/p\/([\w-]+)$/)
   if (piece && PIECES[piece[1]]) return { kind: 'piece', id: piece[1] }
   if (hash === '#/3d-pixels') return { kind: 'studio' }
+  if (hash === '#/qretro') return { kind: 'qretro' }
   return { kind: 'home' }
 }
 
@@ -92,6 +94,8 @@ export function App() {
         <Piece pieceId={view.id} />
       ) : view.kind === 'studio' ? (
         <StudioIndex />
+      ) : view.kind === 'qretro' ? (
+        <QRetro />
       ) : (
         <>
           <Nav />

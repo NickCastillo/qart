@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>QR Snake</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#07070A;display:flex;flex-direction:column;
+            align-items:center;justify-content:center;gap:24px;overflow:hidden}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+/* both games build the same list of codes — each one opens a YouTube video */
+const CODES = await (await fetch('/qretro/codes.json')).json();
+const QRS = CODES.map(c => c.qr);
+const N = QRS[0].length, NQ = QRS.length, NS = 5;
+const DIRS = [[1,0],[0,1],[-1,0],[0,-1]];
+const FBOX = [[0,0],[N-7,0],[0,N-7]];
+const inF = (c, r) => (c < 7 && r < 7) || (c > N-8 && r < 7) || (c < 7 && r > N-8);
+const FC = [{c:3,r:3},{c:N-4,r:3},{c:3,r:N-4}];
+
+const SNK = ['#4ADE80','#38BDF8','#FBBF24','#F472B6','#A78BFA'];
+const BONE = '#EDEAE0', COIN = '#D8A93A';
+const clamp01 = p => p < 0 ? 0 : p > 1 ? 1 : p;
+const outQuint = p => 1 - Math.pow(1-p, 5);
+const outBack = p => 1 + 2.2*Math.pow(p-1, 3) + 1.4*Math.pow(p-1, 2);
+
+/* ---- camino más corto que esquiva los finders (el destino puede ser uno) ---- */
+function pathTo(from, to, g){
+  const dist = new Int16Array(N*N).fill(-1);
+  const q = [to.r*N + to.c];
+  dist[to.r*N + to.c] = 0;
+  for (let h = 0; h < q.length; h++){
+    const cur = q[h], cr = (cur/N)|0, cc = cur%N, d = dist[cur];
+    for (const [dx, dy] of DIRS){
+      const nc = cc+dx, nr = cr+dy;
+      if (nc < 0 || nr < 0 || nc >= N || nr >= N) continue;
+      const ni = nr*N + nc;
+      if (dist[ni] !== -1 || inF(nc, nr)) continue;
+      dist[ni] = d+1; q.push(ni);
+    }
+  }
+  const out = [];
+  let cc = from.c, cr = from.r, dir = null, guard = 0;
+  while (!(cc === to.c && cr === to.r) && guard++ < 1500){
+    const d = dist[cr*N + cc];
+    if (d <= 0) break;
+    let nx = null, bs = -1;
+    for (const v of DIRS){
+      const nc = cc+v[0], nr = cr+v[1];
+      if (nc < 0 || nr < 0 || nc >= N || nr >= N) continue;
+      if (dist[nr*N + nc] !== d-1) continue;
+      let sc = 0;
+      if (g && g[nr][nc] === 'Q') sc += 2;
+      if (dir && v[0] === dir[0] && v[1] === dir[1]) sc += 1;
+      if (sc > bs){ bs = sc; nx = [nc, nr, v]; }
+    }
+    if (!nx) break;
+    cc = nx[0]; cr = nx[1]; dir = nx[2];
+    out.push({c:cc, r:cr});
+  }
+  return out;
+}
+
+/* ---- reparto de monedas en 5 territorios y una ruta por serpiente ---- */
+function planCode(g){
+  const coins = [], walls = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++){
+    if (g[r][c] !== 'Q') continue;
+    (inF(c, r) ? walls : coins).push({c, r});
+  }
+  const MID = (N - 1)/2;
+  let cen = [{c:MID,r:3},{c:N-4,r:MID},{c:MID,r:MID},{c:3,r:MID},{c:MID,r:N-4}];
+  const asg = new Array(coins.length).fill(0);
+  for (let it = 0; it < 10; it++){
+    for (let i = 0; i < coins.length; i++){
+      let bi = 0, bd = 1e9;
+      for (let k = 0; k < NS; k++){
+        const d = (coins[i].c - cen[k].c)**2 + (coins[i].r - cen[k].r)**2;
+        if (d < bd){ bd = d; bi = k; }
+      }
+      asg[i] = bi;
+    }
+    const acc = Array.from({length:NS}, () => ({c:0, r:0, n:0}));
+    for (let i = 0; i < coins.length; i++){ const a = acc[asg[i]]; a.c += coins[i].c; a.r += coins[i].r; a.n++; }
+    for (let k = 0; k < NS; k++) if (acc[k].n) cen[k] = {c:acc[k].c/acc[k].n, r:acc[k].r/acc[k].n};
+  }
+  const groups = Array.from({length:NS}, () => []);
+  coins.forEach((p, i) => groups[asg[i]].push(p));
+
+  const taken = new Set();
+  const snakes = groups.map((grp, k) => {
+    const ctr = cen[k];
+    let tf = 0, td = 1e9;
+    for (let i = 0; i < 3; i++){
+      const d = (FC[i].c - ctr.c)**2 + (FC[i].r - ctr.r)**2;
+      if (d < td){ td = d; tf = i; }
+    }
+    const far = (p) => (p.c - FC[tf].c)**2 + (p.r - FC[tf].r)**2;
+    const rest = grp.slice();
+    let cur = rest.splice(rest.reduce((bi, p, i, a) => far(p) > far(a[bi]) ? i : bi, 0), 1)[0];
+    const tour = [cur];
+    while (rest.length){
+      let bi = 0, bd = 1e9;
+      for (let i = 0; i < rest.length; i++){
+        const d = Math.abs(rest[i].c - cur.c) + Math.abs(rest[i].r - cur.r);
+        if (d < bd){ bd = d; bi = i; }
+      }
+      cur = rest.splice(bi, 1)[0];
+      tour.push(cur);
+    }
+    let dest = null, dd = 1e9;
+    const [bc, br] = FBOX[tf];
+    for (let r = br; r < br+7; r++) for (let c = bc; c < bc+7; c++){
+      if (g[r][c] !== 'Q' || taken.has(r*N + c)) continue;
+      const d = (c - cur.c)**2 + (r - cur.r)**2;
+      if (d < dd){ dd = d; dest = {c, r}; }
+    }
+    taken.add(dest.r*N + dest.c);
+    const path = [tour[0]];
+    for (let i = 1; i < tour.length; i++) path.push(...pathTo(tour[i-1], tour[i], g));
+    path.push(...pathTo(tour[tour.length-1], dest, g));
+    return {col: SNK[k], path, finder: tf, coins: grp.length};
+  });
+
+  const eat = new Float32Array(N*N).fill(Infinity);
+  const isCoin = new Uint8Array(N*N);
+  for (const p of coins) isCoin[p.r*N + p.c] = 1;
+  for (const s of snakes) s.path.forEach((p, i) => {
+    const ix = p.r*N + p.c;
+    if (isCoin[ix] && i < eat[ix]) eat[ix] = i;
+  });
+  let uneaten = 0;
+  for (const p of coins) if (!isFinite(eat[p.r*N + p.c])) uneaten++;
+  return {coins, walls, snakes, eat, isCoin, uneaten,
+          span: Math.max(...snakes.map(s => s.path.length))};
+}
+
+/* ------------------------------ escenario -------------------------------- */
+/* the board fills most of the (already compact) embed */
+const PADC = 1;
+const CELL = Math.max(6, Math.floor(Math.min(innerWidth, innerHeight)*0.88/(N + PADC*2)));
+const S = (N + PADC*2)*CELL;
+const cv = document.getElementById('c');
+const dpr = Math.min(devicePixelRatio, 2);
+cv.width = S*dpr; cv.height = S*dpr; cv.style.width = S+'px'; cv.style.height = S+'px';
+const ctx = cv.getContext('2d');
+ctx.scale(dpr, dpr);
+const W0 = PADC*CELL, W1 = W0 + N*CELL;
+const px = c => W0 + c*CELL, py = r => W0 + r*CELL;
+
+function board(){
+  ctx.fillStyle = '#07070A'; ctx.fillRect(0, 0, S, S);
+  ctx.fillStyle = '#0B0B10'; ctx.fillRect(W0, W0, N*CELL, N*CELL);
+  ctx.strokeStyle = '#13131A'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 1; i < N; i++){
+    ctx.moveTo(W0 + i*CELL + .5, W0); ctx.lineTo(W0 + i*CELL + .5, W1);
+    ctx.moveTo(W0, W0 + i*CELL + .5); ctx.lineTo(W1, W0 + i*CELL + .5);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = '#242430'; ctx.lineWidth = 2;
+  ctx.strokeRect(W0 - 1, W0 - 1, N*CELL + 2, N*CELL + 2);
+}
+let TAP = null;
+const RM = 2;
+function cellRect(c, r, col, sc, al, rad){
+  if (sc <= 0.02 || al <= 0.02) return;
+  if (TAP) TAP(c, r, sc, al);
+  const s = CELL*sc, x = px(c) + (CELL - s)/2, y = py(r) + (CELL - s)/2;
+  if (al < 1) ctx.globalAlpha = al;
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.roundRect(x, y, s, s, rad === undefined ? Math.max(1.5, s*0.16) : rad);
+  ctx.fill();
+  if (al < 1) ctx.globalAlpha = 1;
+}
+function coinAt(c, r, k, tw){
+  const x = px(c) + CELL/2, y = py(r) + CELL/2, rad = CELL*0.17*k;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createRadialGradient(x, y, 0, x, y, rad*3.1);
+  g.addColorStop(0, 'rgba(216,169,58,.55)'); g.addColorStop(1, 'rgba(216,169,58,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, rad*3.1, 0, 6.284); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = COIN;
+  ctx.beginPath(); ctx.arc(x, y, rad, 0, 6.284); ctx.fill();
+  ctx.fillStyle = 'rgba(255,248,220,' + (0.5 + 0.4*tw) + ')';
+  ctx.beginPath(); ctx.arc(x - rad*0.3, y - rad*0.32, rad*0.38, 0, 6.284); ctx.fill();
+}
+
+/* ------------------------------ animación ------------------------------ */
+const INTRO = 0.85, TICK = 0.052, SETTLE = 0.38, HOLD = 2.4, OUT = 0.7;
+const PLANS = QRS.map(planCode);
+let qi = 0, t = 0;
+let P = PLANS[0], T_END = 0, T_TOTAL = 0;
+function load(){
+  P = PLANS[qi];
+  T_END = INTRO + (P.span - 1)*TICK;
+  T_TOTAL = T_END + SETTLE + HOLD + OUT;
+}
+load();
+
+function frame(){
+  board();
+  const fadeOut = t > T_TOTAL - OUT ? 1 - clamp01((t - (T_TOTAL - OUT))/OUT) : 1;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(W0 - 2, W0 - 2, N*CELL + 4, N*CELL + 4); ctx.clip();
+  if (fadeOut < 1) ctx.globalAlpha = fadeOut;
+
+  const tw = 0.5 + 0.5*Math.sin(t*3.1);
+  const intro = clamp01(t/INTRO);
+
+  /* muros */
+  const crashFlash = [0, 0, 0];
+  for (const s of P.snakes){
+    const ct = INTRO + (s.path.length - 1)*TICK;
+    if (t >= ct && t < ct + 0.45) crashFlash[s.finder] = Math.max(crashFlash[s.finder], 1 - (t - ct)/0.45);
+  }
+  for (const w of P.walls){
+    const fi = w.c < 7 ? (w.r < 7 ? 0 : 2) : 1;
+    const f = crashFlash[fi];
+    cellRect(w.c, w.r, BONE, Math.min(1, intro*1.4), 1, RM);
+    if (f > 0.01){
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      cellRect(w.c, w.r, 'rgba(255,255,255,' + (f*0.55) + ')', 1, 1, RM);
+      ctx.restore();
+    }
+  }
+
+  /* monedas y módulos comidos */
+  for (const p of P.coins){
+    const ix = p.r*N + p.c;
+    const et = INTRO + P.eat[ix]*TICK;
+    if (t < et) {
+      const pop = clamp01((t - 0.12 - (p.c + p.r)*0.012)/0.3);
+      if (pop > 0) coinAt(p.c, p.r, outBack(pop), tw);
+    } else {
+      const a = clamp01((t - et)/0.2);
+      cellRect(p.c, p.r, BONE, 0.55 + 0.45*outQuint(a), 1, RM);
+    }
+  }
+
+  /* serpientes */
+  for (const s of P.snakes){
+    const last = s.path.length - 1;
+    const k = Math.min(last, Math.max(0, Math.floor((t - INTRO)/TICK)));
+    if (t < INTRO) continue;
+    const ct = INTRO + last*TICK;
+    const dead = t >= ct;
+    const settle = dead ? clamp01((t - ct)/SETTLE) : 0;
+    const len = Math.min(9, 3 + Math.floor(k/7));
+    for (let b = 0; b < len; b++){
+      const idx = k - b;
+      if (idx < 0) break;
+      const p = s.path[idx];
+      const onCode = inF(p.c, p.r) || P.isCoin[p.r*N + p.c];
+      let sc = 1 - b*0.022, al = 1;
+      if (dead && !onCode){ sc *= 1 - 0.22*settle; al = 1 - 0.68*settle; }
+      if (b === 0 && !dead){
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        const x = px(p.c) + CELL/2, y = py(p.r) + CELL/2;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, CELL*1.5);
+        g.addColorStop(0, s.col + '55'); g.addColorStop(1, s.col + '00');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, CELL*1.5, 0, 6.284); ctx.fill();
+        ctx.restore();
+      }
+      cellRect(p.c, p.r, s.col, sc, al, dead && onCode ? RM + settle*0 : CELL*0.21);
+      if (b === 0){
+        const x = px(p.c) + CELL/2, y = py(p.r) + CELL/2;
+        ctx.globalAlpha = al;
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.beginPath(); ctx.arc(x - CELL*0.16, y - CELL*0.16, CELL*0.075, 0, 6.284); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + CELL*0.16, y - CELL*0.16, CELL*0.075, 0, 6.284); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+  ctx.restore();
+}
+
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (REDUCE) {
+  const paint = () => {
+    board();
+    for (const w of P.walls) cellRect(w.c, w.r, BONE, 1, 1, RM);
+    for (const p of P.coins) cellRect(p.c, p.r, BONE, 1, 1, RM);
+  };
+  paint();
+  setInterval(() => { qi = (qi+1) % NQ; load(); paint(); }, 3000);
+} else {
+  let last = performance.now();
+  const loop = now => {
+    requestAnimationFrame(loop);
+    t += Math.min((now - last)/1000, 0.05);
+    last = now;
+    if (t >= T_TOTAL) { t -= T_TOTAL; qi = (qi+1) % NQ; load(); }
+    frame();
+    window.__fr = (window.__fr || 0) + 1;
+  };
+  requestAnimationFrame(loop);
+}
+
+window.__frame = frame;
+window.__heads = () => PLANS.map((pl, i) => ({
+  code: CODES[i].id,
+  heads: pl.snakes.map(s => {
+    const h = s.path[s.path.length-1];
+    const onWall = inF(h.c, h.r);
+    const touching = DIRS.some(([dx,dy]) => inF(h.c+dx, h.r+dy));
+    return {c:h.c, r:h.r, onWall, touching, finder:s.finder};
+  })
+}));
+window.__stats = () => ({
+  code: CODES[qi].id, coins: P.coins.length, walls: P.walls.length,
+  uneaten: P.uneaten, span: P.span,
+  lens: P.snakes.map(s => s.path.length), per: P.snakes.map(s => s.coins),
+  gameSec: +((P.span - 1)*TICK).toFixed(2), totalSec: +T_TOTAL.toFixed(2), t: +t.toFixed(2)
+});
+window.__verify = () => {
+  const res = [];
+  const sq = qi, st = t;
+  for (let i = 0; i < NQ; i++){
+    qi = i; load();
+    t = T_END + SETTLE + HOLD*0.5;
+    const on = new Set();
+    TAP = (c, r, sc, al) => { if (sc > 0.5 && al > 0.5) on.add(r*N + c); };
+    frame();
+    TAP = null;
+    const g = QRS[i];
+    let missing = 0, extra = 0, dark = 0;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++){
+      const d = g[r][c] === 'Q', w = on.has(r*N + c);
+      if (d) dark++;
+      if (d && !w) missing++;
+      if (!d && w) extra++;
+    }
+    res.push({code: CODES[i].id, dark, drawn: on.size, missing, extra});
+  }
+  qi = sq; t = st; load();
+  return res;
+};
+window.__seek = s => {
+  t = 0; qi = 0; load();
+  const d = 1/60;
+  for (let i = 0; i < Math.round(s/d); i++){
+    t += d;
+    if (t >= T_TOTAL) { t -= T_TOTAL; qi = (qi+1) % NQ; load(); }
+  }
+  frame();
+  return +t.toFixed(2);
+};
+window.__strip = (times, w = 240) => {
+  document.getElementById('__s')?.remove();
+  const wrap = document.createElement('div');
+  wrap.id = '__s';
+  wrap.style.cssText = 'position:fixed;left:0;top:0;z-index:9;background:#07070A;display:flex;gap:6px;padding:6px';
+  document.body.appendChild(wrap);
+  for (const at of times){
+    __seek(at);
+    const cell = document.createElement('div');
+    cell.style.cssText = 'flex:none;text-align:center';
+    const tg = document.createElement('div');
+    tg.textContent = at.toFixed(2) + 's';
+    tg.style.cssText = 'font:11px Inter;color:#8A8AA0;padding:3px 0';
+    const img = document.createElement('img');
+    img.src = cv.toDataURL(); img.width = w; img.height = w; img.style.display = 'block';
+    cell.appendChild(tg); cell.appendChild(img); wrap.appendChild(cell);
+  }
+  return 'strip';
+};
+</script>
+</body>
+</html>
