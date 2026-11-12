@@ -93,6 +93,9 @@ export interface IndexProject {
   href?: string;
   scenes?: { id: string; label: string; sceneLabel: string }[];
   states?: { src: string; alt: string }[];
+  /* live canvas art in the states slot (see StateAnims.tsx); the hint chip
+     position matches where the comp placed it inside the drawing */
+  anim?: { kind: "constelacion" | "qretro"; hint: "tl" | "br" };
 }
 
 /* the landing's 3-project Índice (node I5uBO6) */
@@ -120,16 +123,7 @@ export const PROJECTS: IndexProject[] = [
       "One cloud of blocks that reorders itself into a dog, a car, a coffee or React.",
     linkLabel: "Open",
     href: "#/p/constelacion",
-    states: [
-      {
-        src: "/images/constelacion-figura.png",
-        alt: "Constellation rendered as a voxel figure",
-      },
-      {
-        src: "/images/constelacion-qr.png",
-        alt: "Constellation rendered as a scannable QR",
-      },
-    ],
+    anim: { kind: "constelacion", hint: "br" },
   },
   {
     number: "03",
@@ -139,13 +133,7 @@ export const PROJECTS: IndexProject[] = [
       "Two classics that build a QR: in Tetris the pieces fall into place, in Snake five snakes eat coins until they crash.",
     linkLabel: "Open",
     href: "#/qretro",
-    states: [
-      { src: "/images/qretro-empieza.png", alt: "QRetro Games starting state" },
-      {
-        src: "/images/qretro-comiendo.png",
-        alt: "QRetro Games mid-game state",
-      },
-    ],
+    anim: { kind: "qretro", hint: "tl" },
   },
 ];
 

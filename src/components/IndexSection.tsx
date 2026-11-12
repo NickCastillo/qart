@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, MousePointer2 } from 'lucide-react'
 import { GLYPHS, PROJECTS, type IndexProject } from '../pieces.ts'
+import { ConstelAnim, QRetroAnim } from './StateAnims.tsx'
 
 function Glyph({ pattern }: { pattern: string[] }) {
   /* per-pixel scatter offsets for the hover gesture, matching the old
@@ -58,6 +59,18 @@ function States({ states }: { states: NonNullable<IndexProject['states']> }) {
   )
 }
 
+function StateAnim({ anim }: { anim: NonNullable<IndexProject['anim']> }) {
+  return (
+    <div className="project-states project-anim">
+      {anim.kind === 'qretro' ? <QRetroAnim /> : <ConstelAnim />}
+      <span className={`state-hint state-hint-${anim.hint}`} aria-hidden="true">
+        <MousePointer2 size={12} />
+        HOVER
+      </span>
+    </div>
+  )
+}
+
 function ProjectRow({ project }: { project: IndexProject }) {
   const body = (
     <>
@@ -68,6 +81,7 @@ function ProjectRow({ project }: { project: IndexProject }) {
       <div className="project-name">
         <h3>{project.name}</h3>
         {project.states && <States states={project.states} />}
+        {project.anim && <StateAnim anim={project.anim} />}
       </div>
       {/* the scenes strip is its own section, not a "state" of the row —
           it sits between the title and the description, full width */}

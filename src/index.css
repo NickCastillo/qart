@@ -316,12 +316,58 @@ body.loaded .rise {
   min-width: 0;
 }
 
+/* the state art ships on the page's own background, so it sits frameless —
+   contain keeps the full drawing visible at any row width */
 .project-states img {
   flex: 1;
   min-width: 0;
   height: 250px;
-  object-fit: cover;
-  background: var(--surface-dark);
+  object-fit: contain;
+  transition: transform 0.3s var(--ease-load);
+}
+
+.project-row:hover .project-states img {
+  transform: scale(1.02);
+}
+
+/* live canvas states: the drawing answers the hover itself, and the hint
+   chip bows out once it has done its job */
+.project-anim {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.project-anim canvas {
+  min-width: 0;
+}
+
+.state-hint {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--dim);
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease-load);
+}
+
+.state-hint-br {
+  right: 14px;
+  bottom: 14px;
+}
+
+.state-hint-tl {
+  left: 14px;
+  top: 14px;
+}
+
+.project-row:hover .state-hint {
+  opacity: 0;
 }
 
 .scenes-strip {
