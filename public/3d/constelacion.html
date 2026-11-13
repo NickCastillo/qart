@@ -8,9 +8,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#EEF0F3;--ink:#0A0A0A;--acc:#FF3D00;--dim:#5C6066;--nav:64px;--header:48px;--strip:124px;--edge:40px}
-  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:"Schibsted Grotesk",ui-sans-serif,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
-  canvas{position:fixed;inset:0;z-index:1;display:block}
-  #ghost{position:fixed;z-index:0;left:calc(var(--edge) - .05em);top:calc(var(--nav) + var(--header) + 14px);font-weight:600;font-size:clamp(72px,15vw,220px);line-height:1;letter-spacing:-.05em;color:var(--acc);user-select:none;transition:opacity .3s ease-out}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:"Schibsted Grotesk",ui-sans-serif,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+  a,button{touch-action:manipulation}
+  /* the canvas lives in a box: the full window here, a block in the page flow
+     on a phone. sizeViewport() measures the box, so both paths share one
+     fit-math code path */
+  #stage{position:fixed;inset:0;z-index:1}
+  canvas{position:absolute;inset:0;z-index:1;display:block}
+  #bar{display:contents}
+  .zoomTouch{display:none}
+  /* which gesture zooms is a question about the input, not the window width */
+  @media (hover:none) and (pointer:coarse){
+    .zoomPointer{display:none}
+    .zoomTouch{display:inline}
+  }
+  #ghost{position:absolute;z-index:0;left:calc(var(--edge) - .05em);top:calc(var(--nav) + var(--header) + 14px);font-weight:600;font-size:clamp(72px,15vw,220px);line-height:1;letter-spacing:-.05em;color:var(--acc);user-select:none;transition:opacity .3s ease-out}
   body.paper #ghost{opacity:0}
   #nav{position:fixed;z-index:3;top:0;left:0;right:0;height:var(--nav);box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;padding:0 var(--edge);background:var(--bg);border-bottom:1.5px solid var(--ink)}
   #navL{display:flex;align-items:center;gap:22px}
@@ -20,10 +32,10 @@
   #where{font-size:13px;letter-spacing:.04em;color:var(--dim)}
   #navR{display:flex;gap:32px}
   #navR a{font-weight:500;font-size:16px;color:var(--ink);text-decoration:none}
-  #navR a:hover{color:var(--acc)}
+  @media (hover:hover) and (pointer:fine){#navR a:hover{color:var(--acc)}}
   #pageHeader{position:fixed;z-index:2;top:var(--nav);left:0;right:0;height:var(--header);box-sizing:border-box;display:flex;align-items:center;padding:0 var(--edge);background:var(--bg);border-bottom:1.5px solid var(--ink)}
   #back{display:flex;align-items:center;gap:8px;width:fit-content;font-family:"Geist Mono",ui-monospace,monospace;font-size:13px;letter-spacing:.04em;color:var(--ink);text-decoration:none;transition:opacity .18s ease-out}
-  #back:hover{opacity:.6}
+  @media (hover:hover) and (pointer:fine){#back:hover{opacity:.6}}
   #back svg{display:block}
   #meta{position:fixed;z-index:2;top:calc(var(--nav) + var(--header) + 20px);right:var(--edge);text-align:right;font-size:12px;line-height:1.75;letter-spacing:.03em;color:var(--dim);pointer-events:none}
   #song{color:var(--ink)}
@@ -31,13 +43,13 @@
   #foot{position:fixed;z-index:2;left:var(--edge);bottom:calc(var(--strip) + 20px);max-width:52%;font-size:12px;line-height:1.7;letter-spacing:.02em;color:var(--dim);pointer-events:none}
   #views{position:fixed;z-index:2;right:var(--edge);bottom:calc(var(--strip) + 20px);display:flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden;background:var(--bg)}
   .vbtn{padding:13px 24px;border:0;background:transparent;color:var(--ink);font-family:inherit;font-weight:600;font-size:15px;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
-  .vbtn:hover{background:#E0E3E8}
+  @media (hover:hover) and (pointer:fine){.vbtn:hover{background:#E0E3E8}}
   .vbtn.on{background:var(--ink);color:#fff}
   #dock{position:fixed;z-index:3;left:0;right:0;bottom:0;height:var(--strip);display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg);border-top:1.5px solid var(--ink)}
   .fig{display:flex;flex-direction:column;justify-content:space-between;min-width:0;padding:15px 24px 16px;border:0;border-right:1.5px solid var(--ink);background:transparent;color:var(--ink);font-family:inherit;text-align:left;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
   .fig:first-child{padding-left:var(--edge)}
   .fig:last-child{border-right:0;padding-right:var(--edge)}
-  .fig:hover{background:#E0E3E8}
+  @media (hover:hover) and (pointer:fine){.fig:hover{background:#E0E3E8}}
   .fig.on{background:var(--ink);color:var(--bg)}
   .figTop{display:flex;justify-content:space-between;align-items:center;font-family:"Geist Mono",ui-monospace,monospace;font-size:13px}
   .figName{font-weight:600;font-size:46px;line-height:1;letter-spacing:-.035em;transition:transform .15s ease-out}
@@ -47,18 +59,54 @@
   .glyph b.off{visibility:hidden}
   .fig.on .glyph{color:var(--acc)}
   .fig:focus-visible,.vbtn:focus-visible,#logo:focus-visible,#navR a:focus-visible{outline:2px solid var(--acc);outline-offset:-4px}
+  /* Phone: the overlay studio becomes a stack — scene box, then the data and
+     view toggle, the hints, and the four figures 2x2 (comp Y3kck3). The scene
+     takes whatever height the chrome leaves, so it never needs scrolling on a
+     normal phone but still survives a short landscape viewport. */
   @media (max-width:760px){
-    :root{--edge:18px;--strip:92px;--nav:56px}
-    #where,#navR a:last-child{display:none}
-    #meta{left:var(--edge);right:auto;top:calc(var(--nav) + var(--header) + 48px);text-align:left;font-size:11px}
-    #foot{display:none}
-    #views{left:var(--edge);right:var(--edge)}
-    .vbtn{flex:1}
-    .fig{padding:11px 10px}
-    .fig:first-child{padding-left:var(--edge)}
-    .fig:last-child{padding-right:10px}
-    .figName{font-size:22px;letter-spacing:-.02em}
+    :root{--edge:20px;--nav:56px;--header:40px}
+    html{height:auto;overflow:visible}
+    body{height:auto;min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:none}
+    #nav,#pageHeader,#bar,#meta,#views,#foot,#dock{position:static}
+    #nav,#pageHeader,#bar,#foot,#dock{flex:none}
+    #nav{padding:0 var(--edge)}
+    #navL{gap:12px}
+    #logo{font-size:24px}
+    #logo i{font-size:15px}
+    #where{font-size:11px}
+    /* two links don't fit beside the section label — keep the broader one */
+    #navR a:first-child{display:none}
+    #navR a{font-size:13px}
+    #pageHeader{height:var(--header)}
+
+    #stage{position:relative;inset:auto;flex:1 1 auto;min-height:200px;margin:0 var(--edge);border-radius:4px;overflow:hidden}
+    #ghost{left:12px;top:2px;font-size:clamp(44px,16vw,64px)}
+
+    /* the song title wraps to a second line on the longer tracks — reserving
+       both lines keeps picking a figure from resizing the scene box */
+    #bar{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;padding:14px var(--edge) 0}
+    #meta{top:auto;right:auto;min-width:0;text-align:left;font-size:11px;line-height:1.5}
+    #views{right:auto;bottom:auto}
+    .vbtn{padding:12px 18px;font-size:13px}
+
+    #foot{left:auto;bottom:auto;max-width:none;display:flex;flex-direction:column;gap:5px;padding:14px var(--edge) 16px;font-size:11px;line-height:1.5}
+    /* two lines are reserved so swapping hints can't resize the scene box */
+    #hint{min-height:33px}
+    #dock{height:auto;grid-template-columns:1fr 1fr}
+    .fig{padding:13px 16px 14px;min-height:88px}
+    .fig:first-child,.fig:last-child{padding-left:16px;padding-right:16px}
+    .fig:nth-child(odd){border-right:1.5px solid var(--ink)}
+    .fig:nth-child(even){border-right:0}
+    .fig:nth-child(-n+2){border-bottom:1.5px solid var(--ink)}
+    .figName{font-size:32px;letter-spacing:-.034em}
     .glyph{grid-template-columns:repeat(7,3px);grid-auto-rows:3px}
+  }
+  /* a short viewport has nothing to spare: the chrome gives the scene back
+     what it can rather than squeezing the sculpture into a letterbox */
+  @media (max-width:760px) and (max-height:700px){
+    #foot{padding:10px var(--edge) 12px}
+    .fig{padding:10px 16px 11px;min-height:74px}
+    .figName{font-size:26px}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -67,7 +115,6 @@
 </script>
 </head>
 <body>
-<div id="ghost">Dog</div>
 <nav id="nav">
   <div id="navL">
     <a id="logo" href="/#top" target="_top" aria-label="QaRt home">Q<i>a</i>R<i>t</i></a>
@@ -81,17 +128,25 @@
     BACK
   </a>
 </header>
-<div id="meta">
-  <div id="song"><i></i><span id="songL">—</span></div>
-  <div id="count"></div>
+<div id="stage">
+  <div id="ghost">Dog</div>
+</div>
+<div id="bar">
+  <div id="meta">
+    <div id="song"><i></i><span id="songL">—</span></div>
+    <div id="count"></div>
+  </div>
+  <div id="views" role="group" aria-label="View">
+    <button class="vbtn on" id="bFig">Figure</button>
+    <button class="vbtn" id="bQR">QR</button>
+  </div>
 </div>
 <div id="foot">
   <div id="hint"></div>
-  <div id="zoomHint">SCROLL — ZOOM TO THE PIXEL</div>
-</div>
-<div id="views" role="group" aria-label="View">
-  <button class="vbtn on" id="bFig">Figure</button>
-  <button class="vbtn" id="bQR">QR</button>
+  <div id="zoomHint">
+    <span class="zoomPointer">SCROLL — ZOOM TO THE PIXEL</span>
+    <span class="zoomTouch">PINCH — ZOOM TO THE PIXEL</span>
+  </div>
 </div>
 <div id="dock"></div>
 <script type="module">
@@ -222,36 +277,45 @@ const scene = new THREE.Scene();
    figure never resolves; a long lens from far keeps the projection nearly
    orthographic, which is what makes the face-on view read as the drawing */
 const camera = new THREE.PerspectiveCamera(9, 1, 0.2, 1600);
+const stage = document.getElementById('stage');
 const pageHeader = document.getElementById('pageHeader');
+const dockEl = document.getElementById('dock');
 let vpW = 0, vpH = 0;
-/* fraction of the window height actually visible between the fixed page
-   chrome (nav + header above, dock below) — fit math uses it so the
-   framed object clears the bars instead of just the full frustum */
+/* fraction of the stage box actually visible between the page chrome (nav +
+   header above, dock below) — fit math uses it so the framed object clears
+   the bars instead of just the full frustum */
 let bandFrac = 0.62;
-function syncChromeShift(){
-  const cs = getComputedStyle(document.documentElement);
-  const nav = parseFloat(cs.getPropertyValue('--nav'));
-  const strip = parseFloat(cs.getPropertyValue('--strip'));
-  const topChrome = nav + pageHeader.getBoundingClientRect().height;
-  const bottomChrome = strip;
+/* the overlap is measured, not assumed: on desktop the bars float over a
+   full-window canvas and eat into it; on a phone they sit above and below a
+   boxed canvas, so both terms come out 0 and the whole box is the band */
+function syncChromeShift(rect){
+  const h = rect.height || 1;
+  const topChrome = Math.max(0, Math.min(pageHeader.getBoundingClientRect().bottom - rect.top, h));
+  const bottomChrome = Math.max(0, Math.min(rect.bottom - dockEl.getBoundingClientRect().top, h));
   /* camera.setViewOffset only skews the frustum when its window is smaller
      than the declared full size; with both equal (as here) it's a no-op, so
      the chrome asymmetry is compensated with a plain CSS shift instead */
-  renderer.domElement.style.transform = `translateY(${(topChrome - bottomChrome)/2}px)`;
-  bandFrac = Math.max(0.3, (innerHeight - topChrome - bottomChrome)/innerHeight);
+  renderer.domElement.style.transform = topChrome || bottomChrome ? `translateY(${(topChrome - bottomChrome)/2}px)` : '';
+  bandFrac = Math.max(0.3, (h - topChrome - bottomChrome)/h);
 }
 function sizeViewport(){
-  const w = innerWidth || 1200, h = innerHeight || 760;
+  const rect = stage.getBoundingClientRect();
+  const w = Math.round(rect.width) || innerWidth || 1200;
+  const h = Math.round(rect.height) || innerHeight || 760;
   if (w !== vpW || h !== vpH) {
     vpW = w; vpH = h;
     renderer.setSize(w, h);
     camera.aspect = w/h;
     camera.updateProjectionMatrix();
   }
-  syncChromeShift();
+  syncChromeShift(rect);
 }
-document.body.prepend(renderer.domElement);
+stage.prepend(renderer.domElement);
 sizeViewport();
+/* the stage box changes height on its own: the hint line is filled after
+   init, fonts land late, and dvh moves as the mobile URL bar collapses — so
+   track the box rather than guessing when to re-measure */
+if (window.ResizeObserver) new ResizeObserver(() => sizeViewport()).observe(stage);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, 0);
@@ -263,8 +327,13 @@ controls.zoomSpeed = 1.15;
 
 const FOV_HALF = THREE.MathUtils.degToRad(4.5);
 const FIT_WIDTH = 23;
-const place = (polarDeg, aziDeg, wanted) => {
-  const dist = Math.max(wanted, FIT_WIDTH/(2*Math.tan(FOV_HALF)*camera.aspect));
+/* floor for the hardcoded establishing distances, so they can't frame the
+   cloud wider than the frustum holds. It scales with 1/aspect, so on a
+   portrait phone it grows past the per-figure fit and would override it —
+   the fitted views pass fitted=true to opt out, since fitDist/qrFitDist
+   already cover both the width and the height themselves. */
+const place = (polarDeg, aziDeg, wanted, fitted = false) => {
+  const dist = fitted ? wanted : Math.max(wanted, FIT_WIDTH/(2*Math.tan(FOV_HALF)*camera.aspect));
   const p = THREE.MathUtils.degToRad(polarDeg), a = THREE.MathUtils.degToRad(aziDeg);
   return new THREE.Vector3(dist*Math.sin(p)*Math.sin(a), dist*Math.cos(p), dist*Math.sin(p)*Math.cos(a));
 };
@@ -281,7 +350,7 @@ let tween = null;
 const ROT_SWAY = THREE.MathUtils.degToRad(6);
 let baseAzi = 0, swayDir = 1;
 const flyTo = (p, a, d, up) => {
-  tween = {s:camera.position.clone(), e:place(p, a, d), upS:camera.up.clone(), upE:up, t:0};
+  tween = {s:camera.position.clone(), e:place(p, a, d, true), upS:camera.up.clone(), upE:up, t:0};
   baseAzi = THREE.MathUtils.degToRad(a); swayDir = 1;
 };
 window.setView = (p, a, d = 140) => { camera.position.copy(place(p, a, d)); camera.lookAt(0, 0, 0); };
@@ -384,6 +453,12 @@ FIGS.forEach((f, idx) => {
 addEventListener('resize', sizeViewport);
 document.getElementById('count').textContent = String(N).replace(/\B(?=(\d{3})+$)/g, ',') + ' BLOCKS · 4 FIGURES';
 hint.textContent = 'one cloud of blocks — pick a figure and watch it reorder itself';
+/* the hints are written after init, and on a phone they sit in the flow above
+   the dock — so the stage box only has its final height from here on, and the
+   opening pose has to be placed against that height, not the pre-dock one */
+sizeViewport();
+camera.position.copy(place(74, 28, 150));
+camera.lookAt(0, 0, 0);
 
 function selectFig(idx){
   const f = FIGS[idx];

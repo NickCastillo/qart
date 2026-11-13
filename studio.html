@@ -8,7 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#EEF0F3;--ink:#0A0A0A;--acc:#FF3D00;--dim:#5C6066;--nav:64px;--header:48px;--edge:40px;--panelW:320px}
-  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:"Schibsted Grotesk",ui-sans-serif,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+  html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);font-family:"Schibsted Grotesk",ui-sans-serif,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+  a,button{touch-action:manipulation}
   #vp{position:fixed;top:calc(var(--nav) + var(--header));left:0;right:var(--panelW);bottom:0}
   canvas{display:block}
   #overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:20px 26px;box-sizing:border-box}
@@ -18,14 +19,17 @@
   #scanDot{width:6px;height:6px;border-radius:99px;background:var(--acc)}
   #hint{font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;color:var(--dim);text-align:center;letter-spacing:.02em;transition:color .4s}
   #nav{position:fixed;z-index:3;top:0;left:0;right:0;height:var(--nav);box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;padding:0 var(--edge);background:var(--bg);border-bottom:1.5px solid var(--ink)}
+  #navL{display:flex;align-items:center;gap:12px}
+  #backM{display:none;align-items:center;color:var(--ink)}
+  #sceneTag{display:none;font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.09em;color:var(--dim)}
   #logo{display:inline-flex;align-items:baseline;font-weight:700;font-size:30px;line-height:1;letter-spacing:-.01em;color:var(--ink);text-decoration:none}
   #logo i{font-style:normal;font-size:19px}
   #navR{display:flex;gap:32px}
   #navR a{font-weight:500;font-size:16px;color:var(--ink);text-decoration:none}
-  #navR a:hover{color:var(--acc)}
+  @media (hover:hover) and (pointer:fine){#navR a:hover{color:var(--acc)}}
   #pageHeader{position:fixed;z-index:2;top:var(--nav);left:0;right:0;height:var(--header);box-sizing:border-box;display:flex;align-items:center;padding:0 var(--edge);background:var(--bg)}
   #back{display:flex;align-items:center;gap:8px;width:fit-content;font-family:"Geist Mono",ui-monospace,monospace;font-size:13px;letter-spacing:.04em;color:var(--ink);text-decoration:none;transition:opacity .18s ease-out}
-  #back:hover{opacity:.6}
+  @media (hover:hover) and (pointer:fine){#back:hover{opacity:.6}}
   #back svg{display:block}
   #panel{position:fixed;z-index:1;top:calc(var(--nav) + var(--header));right:0;bottom:0;width:var(--panelW);box-sizing:border-box;background:var(--bg);border-left:1.5px solid var(--ink);padding:24px;display:flex;flex-direction:column;gap:22px;overflow-y:auto}
   .sec{font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;font-weight:500;letter-spacing:.14em;color:var(--dim)}
@@ -36,16 +40,19 @@
   .scene.active{background:var(--ink);color:var(--bg);font-weight:600}
   .scene.active svg{stroke:var(--acc)}
   .scene.link{cursor:pointer}
-  .scene.link:hover{background:#E0E3E8}
+  @media (hover:hover) and (pointer:fine){.scene.link:hover{background:#E0E3E8}}
+  .scene.link:active{background:#E0E3E8}
   .segmented{display:flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden}
   .seg{flex:1;padding:10px 8px;border:0;background:transparent;color:var(--ink);font-family:"Schibsted Grotesk";font-size:12px;font-weight:600;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
-  .seg:hover{background:#E0E3E8}
+  @media (hover:hover) and (pointer:fine){.seg:hover{background:#E0E3E8}}
+  .seg:active:not(.active){background:#E0E3E8}
   .seg.active{background:var(--ink);color:var(--bg)}
   .floorOpts{display:flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden}
   .fop{flex:1;padding:10px 12px;border:0;border-right:1.5px solid var(--ink);background:transparent;color:var(--ink);font-family:"Schibsted Grotesk";font-size:12px;font-weight:600;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
   .fop:last-child{border-right:0}
   .fop i{display:none}
-  .fop:hover{background:#E0E3E8}
+  @media (hover:hover) and (pointer:fine){.fop:hover{background:#E0E3E8}}
+  .fop:active:not(.active){background:#E0E3E8}
   .fop.active{background:var(--ink);color:var(--bg)}
   .note{font-size:12px;line-height:1.5;color:var(--dim)}
   .swatches{display:flex;gap:10px}
@@ -55,7 +62,8 @@
   .chips{display:flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden}
   .chip{flex:1;padding:8px 12px;border:0;border-right:1.5px solid var(--ink);background:transparent;color:var(--ink);font-family:"Schibsted Grotesk";font-size:12px;font-weight:600;cursor:pointer;transition:background .18s ease-out,color .18s ease-out}
   .chip:last-child{border-right:0}
-  .chip:hover{background:#E0E3E8}
+  @media (hover:hover) and (pointer:fine){.chip:hover{background:#E0E3E8}}
+  .chip:active:not(.on){background:#E0E3E8}
   .chip.on{background:var(--ink);color:var(--bg)}
   .srow{display:flex;justify-content:space-between;font-size:12px}
   .srow b{font-weight:400;color:var(--ink)}
@@ -67,10 +75,51 @@
   input[type=range]::-moz-range-progress{height:2px;border-radius:2px;background:var(--acc)}
   input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:99px;background:var(--ink);border:0}
   #shuffle{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 16px;border-radius:4px;border:0;background:var(--ink);color:var(--bg);font-family:"Schibsted Grotesk";font-size:14px;font-weight:600;cursor:pointer;transition:opacity .18s ease-out}
-  #shuffle:hover{opacity:.82}
+  @media (hover:hover) and (pointer:fine){#shuffle:hover{opacity:.82}}
+  #shuffle:active{opacity:.82}
   #shuffle svg{stroke:var(--acc)}
+  /* desktop keeps the panel as one scrolling flex column: the wrappers that
+     become the sheet's scroll area and pinned action row dissolve here */
+  #panelScroll,#panelAction{display:contents}
+  #sheetHint,#dataLine,#viewSeg{display:none}
   @media (max-width:900px){
     :root{--panelW:280px}
+  }
+  /* Phone (comps yEdMe / po31l): the scene takes the top half, the controls
+     become a bottom sheet — a fixed gesture line on top, the sections
+     scrolling inside, and the shuffle action pinned under them. */
+  @media (max-width:760px){
+    :root{--nav:48px;--edge:20px;--sheetH:min(49dvh,440px)}
+    #navR,#pageHeader,#sceneLabel,#hint,#viewCol{display:none}
+    #backM{display:flex}
+    #sceneTag{display:block}
+    #logo{font-size:24px}
+    #logo i{font-size:15px}
+
+    /* the canvas runs 20px under the sheet so its rounded corners sit on it */
+    #vp{top:var(--nav);left:0;right:0;bottom:calc(var(--sheetH) - 20px)}
+    #overlay{padding:14px 14px 33px}
+    #scanChip{padding:7px 10px;border:0;border-radius:4px;background:var(--ink);color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.02em}
+    #scanDot{width:7px;height:7px}
+    /* the view switch lives on the scene itself, where its effect is */
+    #viewSeg{display:flex;align-self:center;pointer-events:auto;background:#fff}
+    #viewSeg .seg{flex:none;padding:9px 16px}
+
+    #panel{top:auto;left:0;right:0;bottom:0;width:auto;height:var(--sheetH);padding:0;gap:0;border-left:0;border-top:1.5px solid var(--ink);border-radius:16px 16px 0 0;overflow:hidden}
+    #sheetHint{display:block;flex:none;padding:14px 20px 10px;text-align:center;font-family:"Geist Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.05em;color:var(--dim)}
+    #panelScroll{display:flex;flex-direction:column;gap:16px;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:6px 20px 16px}
+    #panelScroll .col{gap:10px;padding-bottom:16px;border-bottom:1px solid rgba(10,10,10,.15)}
+    #dataLine{display:block;font-family:"Geist Mono",ui-monospace,monospace;font-size:10px;line-height:1.5;letter-spacing:.05em;color:var(--dim)}
+    #panelAction{display:block;flex:none;padding:10px 20px 10px;border-top:1px solid rgba(10,10,10,.15);background:var(--bg)}
+    #shuffle{margin-top:0;width:100%;padding:13px 16px}
+
+    .grid2{gap:8px}
+    .scene{padding:12px 10px;gap:7px;font-size:14px}
+    .scene svg{width:20px;height:20px}
+    .fop,.seg{padding:10px 8px;font-size:13px}
+    .chip{padding:10px 12px;font-size:13px}
+    /* a taller input is the touch target; the 2px track stays centered */
+    input[type=range]{height:28px;touch-action:pan-y}
   }
   html.embed #panel,html.embed #overlay,html.embed #nav,html.embed #pageHeader{display:none}
   html.embed #vp{inset:0}
@@ -79,7 +128,13 @@
 </head>
 <body>
 <nav id="nav">
-  <a id="logo" href="/#top" target="_top" aria-label="QaRt home">Q<i>a</i>R<i>t</i></a>
+  <div id="navL">
+    <a id="backM" href="/#/3d-pixels" target="_top" aria-label="Back to the studio index">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+    </a>
+    <a id="logo" href="/#top" target="_top" aria-label="QaRt home">Q<i>a</i>R<i>t</i></a>
+  </div>
+  <span id="sceneTag"></span>
   <div id="navR"><a href="/#index" target="_top">Projects</a><a href="/#why" target="_top">Why</a></div>
 </nav>
 <header id="pageHeader">
@@ -95,14 +150,21 @@
       <div id="scanChip"><span id="scanDot"></span><span>100% scannable from above</span></div>
     </div>
     <div id="hint"></div>
+    <div id="viewSeg" class="segmented" role="group" aria-label="View">
+      <button class="seg active" data-mode="scene">Scene</button>
+      <button class="seg" data-mode="qr">QR</button>
+      <button class="seg" data-mode="cloud">Cloud</button>
+    </div>
   </div>
 </div>
 <div id="panel">
+  <div id="sheetHint">TWO FINGERS TO ZOOM · ONE TO ORBIT</div>
+  <div id="panelScroll">
   <div class="col">
     <div class="sec">SCENE</div>
     <div class="grid2" id="dock"></div>
   </div>
-  <div class="col">
+  <div class="col" id="viewCol">
     <div class="sec">VIEW</div>
     <div class="segmented">
       <button class="seg active" data-mode="scene">Show scene</button>
@@ -130,10 +192,14 @@
     <div class="srow"><b>Speed</b><span id="spdV">0.6×</span></div>
     <input type="range" id="spd" min="0" max="2" step="0.1" value="0.6" style="--fill:30%">
   </div>
+  <div id="dataLine"></div>
+  </div>
+  <div id="panelAction">
   <button id="shuffle">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.4c1.3 0 2.5.6 3.3 1.7l6.1 8.6c.7 1.1 2 1.7 3.3 1.7H22"/><path d="m18 14 4 4-4 4"/></svg>
     <span id="shuffleLabel">Shuffle</span>
   </button>
+  </div>
 </div>
 <script type="module" src="/src/studio/main.ts"></script>
 </body>

@@ -18,6 +18,12 @@
   box-sizing: border-box;
 }
 
+html {
+  /* no grey flash on tap, no font inflation in landscape */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -31,8 +37,15 @@ a {
   color: inherit;
 }
 
+a,
+button {
+  /* no 300ms double-tap-zoom wait before click fires */
+  touch-action: manipulation;
+}
+
 .page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: clip;
@@ -192,11 +205,20 @@ body.loaded .rise {
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
   transition: transform 0.15s var(--ease-load);
 }
 
-.cta:hover {
-  transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+  .cta:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* touch has no hover to answer with, so the press itself answers */
+.cta:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .hero-visual {
@@ -326,8 +348,10 @@ body.loaded .rise {
   transition: transform 0.3s var(--ease-load);
 }
 
-.project-row:hover .project-states img {
-  transform: scale(1.02);
+@media (hover: hover) and (pointer: fine) {
+  .project-row:hover .project-states img {
+    transform: scale(1.02);
+  }
 }
 
 /* live canvas states: the drawing answers the hover itself, and the hint
@@ -366,8 +390,10 @@ body.loaded .rise {
   top: 14px;
 }
 
-.project-row:hover .state-hint {
-  opacity: 0;
+@media (hover: hover) and (pointer: fine) {
+  .project-row:hover .state-hint {
+    opacity: 0;
+  }
 }
 
 .scenes-strip {
@@ -384,8 +410,14 @@ body.loaded .rise {
   transition: background 0.2s ease-out;
 }
 
-.scene-tile:hover {
-  background: rgba(10, 10, 10, 0.04);
+@media (hover: hover) and (pointer: fine) {
+  .scene-tile:hover {
+    background: rgba(10, 10, 10, 0.04);
+  }
+}
+
+.scene-tile:active {
+  background: rgba(10, 10, 10, 0.06);
 }
 
 .glyph {
@@ -401,8 +433,10 @@ body.loaded .rise {
   transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.scene-tile:hover .glyph b.on {
-  transform: translate(var(--gx), var(--gy));
+@media (hover: hover) and (pointer: fine) {
+  .scene-tile:hover .glyph b.on {
+    transform: translate(var(--gx), var(--gy));
+  }
 }
 
 .scene-name {
@@ -447,8 +481,10 @@ body.loaded .rise {
   color: var(--accent);
 }
 
-.project-row:hover .project-link {
-  gap: 11px;
+@media (hover: hover) and (pointer: fine) {
+  .project-row:hover .project-link {
+    gap: 11px;
+  }
 }
 
 .project-row.soon .project-link {
@@ -521,6 +557,7 @@ body.loaded .rise {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--surface-dark);
 }
 
@@ -548,7 +585,7 @@ body.loaded .rise {
 .stage-frame {
   flex: 1;
   width: 100%;
-  min-height: calc(100vh - 64px);
+  min-height: calc(100dvh - 64px);
   border: 0;
   display: block;
   background: #08080c;
@@ -557,6 +594,7 @@ body.loaded .rise {
 .stage-frame-full {
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   border: 0;
   display: block;
 }
@@ -570,8 +608,10 @@ body.loaded .rise {
   transition: opacity 0.18s ease-out;
 }
 
-.back-link:hover {
-  opacity: 0.6;
+@media (hover: hover) and (pointer: fine) {
+  .back-link:hover {
+    opacity: 0.6;
+  }
 }
 
 /* ---------- Studio index (3D Pixels sub-page) ---------- */
@@ -699,14 +739,6 @@ body.loaded .rise {
   color: var(--dim);
 }
 
-@media (max-width: 760px) {
-  .qretro-games {
-    flex-direction: column;
-    align-items: center;
-    gap: 48px;
-  }
-}
-
 .index.studio-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -735,8 +767,10 @@ body.loaded .rise {
   border-bottom: none;
 }
 
-.scene-row:hover {
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+  .scene-row:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .scene-row-name {
@@ -877,14 +911,6 @@ body.loaded .rise {
     width: 420px;
   }
 
-  .stats {
-    flex-wrap: wrap;
-  }
-
-  .stat {
-    flex: 1 1 45%;
-  }
-
   .project-name {
     flex-direction: column;
   }
@@ -923,47 +949,371 @@ body.loaded .rise {
   }
 }
 
+/* Phones and small tablets. Sizes come from the mobile comps (AJko7 landing,
+   HqXL6 studio index, SGai8 QRetro); the vw terms keep them fluid between
+   320px and this breakpoint instead of snapping at one width. */
 @media (max-width: 760px) {
+  /* ----- nav: the two links stay on the page, only the scale changes ----- */
+  .nav {
+    padding: 10px var(--pad-x);
+  }
+
+  .wordmark--nav .wm-cap {
+    font-size: 24px;
+  }
+
+  .wordmark--nav .wm-low {
+    font-size: 15px;
+  }
+
   .nav-links {
-    display: none;
+    gap: 18px;
+  }
+
+  .nav-link {
+    /* padding, not height: grows the tap target without moving the label */
+    padding: 10px 0;
+    font-size: 13px;
+  }
+
+  /* ----- hero: the live code sits between the headline and the bajada ----- */
+  .hero {
+    flex-direction: column;
+    gap: 26px;
+    padding: 28px var(--pad-x) 38px;
+  }
+
+  /* flattened so the finder can be ordered between the copy's two halves */
+  .hero-copy {
+    display: contents;
+  }
+
+  .headline {
+    order: 1;
+    margin: 0;
+    font-size: clamp(40px, 12.8vw, 50px);
+    letter-spacing: -0.035em;
+  }
+
+  .finder {
+    order: 2;
+    width: 100%;
+    max-width: 100%;
+    align-self: stretch;
+  }
+
+  .hero-sub {
+    order: 3;
+    width: 100%;
+    gap: 20px;
+  }
+
+  .hero-sub p {
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  /* ----- stats: three across, as the comp keeps them ----- */
+  .stats {
+    flex-wrap: nowrap;
+  }
+
+  .stat {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 16px 12px 16px 0;
+  }
+
+  .stat + .stat {
+    padding-left: 14px;
+  }
+
+  .stat:last-child {
+    padding-right: 0;
+  }
+
+  .stat em {
+    font-size: clamp(26px, 8.7vw, 34px);
+    letter-spacing: -0.035em;
+  }
+
+  .stat span {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  /* the studio page's labels are too long to sit under their numbers, so
+     that page's stats stack into rows instead (comp HqXL6) */
+  .stats--rows {
+    flex-direction: column;
+  }
+
+  .stats--rows .stat {
+    flex: none;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 0;
+  }
+
+  .stats--rows .stat em {
+    font-size: clamp(34px, 11.3vw, 44px);
+  }
+
+  .stats--rows .stat span {
+    text-align: right;
+  }
+
+  /* ----- index rows ----- */
+  .project-row {
+    gap: 14px;
+    padding: 16px 0 30px;
+  }
+
+  .project-meta {
+    font-size: 12px;
+  }
+
+  .project-name {
+    gap: 16px;
+  }
+
+  .project-name h3 {
+    font-size: clamp(34px, 11.3vw, 44px);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+  }
+
+  /* 2x2 instead of four across, with the gutter as a grid gap so the tiles
+     keep equal content edges with the rest of the page */
+  .scenes-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 30px;
+  }
+
+  .scene-tile {
+    padding: 18px 0 16px;
+  }
+
+  .scene-name {
+    font-size: 24px;
+    letter-spacing: -0.025em;
+  }
+
+  .scene-cap {
+    font-size: 10px;
   }
 
   .project-foot {
     flex-direction: column;
     align-items: flex-start;
+    gap: 14px;
+    padding-top: 4px;
   }
 
-  .scene-images {
-    flex-direction: column;
+  .project-foot p {
+    font-size: 15px;
+    line-height: 1.4;
   }
 
-  .scene-visual-qr {
-    width: 100%;
+  .project-link {
+    font-size: 16px;
   }
 
-  .studio-band {
-    padding: 40px 20px;
+  /* ----- why ----- */
+  .why {
+    padding: 44px var(--pad-x) 48px;
   }
 
-  .studio-band-card {
-    padding: 32px 24px 0;
+  .why-text {
+    gap: 16px;
   }
 
-  .studio-band-controls {
-    flex-wrap: wrap;
+  .why-eyebrow {
+    font-size: 11px;
   }
 
-  .studio-band-controls span {
-    flex: 1 1 33%;
+  .why-text p {
+    font-size: clamp(24px, 7.2vw, 28px);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
   }
 
+  /* ----- footer ----- */
   .footer {
     flex-direction: column;
     align-items: flex-start;
+    gap: 26px;
+    padding: 30px var(--pad-x) 28px;
+  }
+
+  .wordmark--footer .wm-cap {
+    font-size: clamp(64px, 22.5vw, 88px);
+  }
+
+  .wordmark--footer .wm-low {
+    font-size: clamp(40px, 13.8vw, 54px);
   }
 
   .footer-meta {
     align-items: flex-start;
+    gap: 2px;
+  }
+
+  .footer-links {
+    padding: 5px 0;
+    font-size: 15px;
+  }
+
+  .footer-copy {
+    font-size: 11px;
+  }
+
+  /* ----- sub-page headers (studio index + QRetro) ----- */
+  .studio-header {
+    gap: 26px;
+    padding: 26px var(--pad-x) 34px;
+  }
+
+  .back-link {
+    font-size: 12px;
+  }
+
+  .studio-header .back-link {
+    /* 32px tap target, no layout shift */
+    margin: -8px 0;
+    padding: 8px 0;
+  }
+
+  .studio-title-row {
+    gap: 20px;
+  }
+
+  .studio-title {
+    gap: 12px;
+    font-size: clamp(38px, 12.3vw, 48px);
+    letter-spacing: -0.035em;
+  }
+
+  .studio-title-row p {
+    max-width: 100%;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  /* ----- studio index scene rows ----- */
+  .scene-row {
+    gap: 12px;
+    padding: 16px 0 28px;
+  }
+
+  .scene-row-name {
+    font-size: clamp(36px, 12.3vw, 48px);
+    letter-spacing: -0.035em;
+  }
+
+  /* scene and code stay paired side by side: stacked, the two 290px stills
+     would be taller than the phone */
+  .scene-images {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .scene-visual-escena,
+  .scene-visual-qr {
+    width: auto;
+    min-width: 0;
+    height: clamp(118px, 38vw, 150px);
+  }
+
+  /* ----- studio band ----- */
+  .studio-band {
+    padding: 36px var(--pad-x) 44px;
+  }
+
+  .studio-band-card {
+    gap: 26px;
+    padding: 34px 22px;
+  }
+
+  .studio-band-title {
+    font-size: clamp(32px, 10.3vw, 40px);
+    letter-spacing: -0.035em;
+  }
+
+  .studio-band-action {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .studio-band-action p {
+    width: 100%;
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  /* six mono labels in a row is a desktop flourish — the comp drops it */
+  .studio-band-controls {
+    display: none;
+  }
+
+  /* ----- QRetro ----- */
+  .qretro-animations {
+    padding: 34px var(--pad-x) 36px;
+  }
+
+  .qretro-anims-inner {
+    width: 100%;
+    gap: 22px;
+  }
+
+  .qretro-label-row {
+    gap: 16px;
+    font-size: 11px;
+  }
+
+  .qretro-games {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 22px;
+  }
+
+  .qretro-game {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .qretro-game-name h3 {
+    font-size: 28px;
+    letter-spacing: -0.03em;
+  }
+
+  .qretro-game-name span {
+    font-size: 12px;
+  }
+
+  .qretro-game p {
+    font-size: 15px;
+  }
+
+  /* ----- piece stage chrome ----- */
+  .stage-bar {
+    height: 56px;
+  }
+
+  .stage-frame {
+    min-height: calc(100dvh - 56px);
+  }
+}
+
+/* nothing to hover with: the "HOVER" chips would be telling a lie */
+@media (hover: none) {
+  .state-hint {
+    display: none;
   }
 }
 

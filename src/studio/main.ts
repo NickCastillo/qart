@@ -13,6 +13,7 @@ import { create as createCigarro } from "./scenes/cigarro.ts";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const vp = $("vp"), hintEl = $("hint"), sceneLabelEl = $("sceneLabel");
+const sceneTagEl = $("sceneTag"), dataLineEl = $("dataLine");
 const dockEl = $("dock"), viewNoteEl = $("viewNote");
 const floorsTitleEl = $("floorsTitle"), floorOptsEl = $("floorOpts"), floorNoteEl = $("floorNote");
 const swatchTitleEl = $("swatchTitle"), swatchesEl = $("swatches");
@@ -36,6 +37,9 @@ function sizeViewport() {
 }
 vp.prepend(renderer.domElement);
 sizeViewport();
+/* on a phone #vp is sized by the bottom sheet's CSS, and dvh moves as the
+   browser chrome collapses — track the box instead of guessing when */
+new ResizeObserver(() => sizeViewport()).observe(vp);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -62,12 +66,17 @@ function glideTargetTo(v: THREE.Vector3) {
   tTween = { s: controls.target.clone(), e: v.clone(), t: 0 };
 }
 const place = (polarDeg: number, aziDeg: number, dist: number) => {
+  /* every scene's view distances are tuned on the wide desktop viewport,
+     where height limits the shot; on a portrait viewport (the phone layout's
+     near-square canvas) width limits it instead, so back off until the shot
+     covers the same extent sideways that it was tuned to cover vertically */
+  const d = camera.aspect < 1 ? dist / Math.max(camera.aspect, 0.5) : dist;
   const p = THREE.MathUtils.degToRad(polarDeg), a = THREE.MathUtils.degToRad(aziDeg);
   const t = targetEnd;
   return new THREE.Vector3(
-    t.x + dist * Math.sin(p) * Math.sin(a),
-    t.y + dist * Math.cos(p),
-    t.z + dist * Math.sin(p) * Math.cos(a));
+    t.x + d * Math.sin(p) * Math.sin(a),
+    t.y + d * Math.cos(p),
+    t.z + d * Math.sin(p) * Math.cos(a));
 };
 let tween: { s: THREE.Vector3; e: THREE.Vector3; t: number } | null = null;
 const api: EngineApi = {
@@ -159,6 +168,10 @@ function buildPanel(s: StudioScene) {
   spdV.textContent = s.getSpeed().toFixed(1) + "×";
   spd.style.setProperty("--fill", (s.getSpeed() / 2 * 100) + "%");
   sceneLabelEl.textContent = s.sceneLabel;
+  /* the phone layout splits that overlay line in two: a short scene tag in
+     the nav, and the voxel stats at the end of the sheet's scroll */
+  sceneTagEl.textContent = "0" + (sceneList.indexOf(s) + 1) + " · " + s.label.toUpperCase();
+  dataLineEl.textContent = s.sceneLabel;
   api.syncSegs(s.getMode());
 }
 

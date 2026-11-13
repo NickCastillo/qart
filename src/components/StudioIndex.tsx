@@ -30,7 +30,9 @@ export function StudioIndex() {
           </p>
         </div>
       </header>
-      <section className="stats">
+      {/* stats--rows: these labels are too long to sit under their numbers on
+          a phone, so they stack into rows there (comp HqXL6) */}
+      <section className="stats stats--rows">
         {STATS.map(({ value, label, accent }) => (
           <div className="stat" key={label}>
             <em className={accent ? 'accent' : undefined}>{value}</em>
